@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เครื่องมือนำเข้าข้อมูลยานพาหนะ (Data Importer)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Sarabun', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg max-w-lg w-full text-center border-t-4 border-green-500">
+        <div class="text-5xl mb-4">📥</div>
+        <h2 class="text-2xl font-bold mb-2 text-gray-800">นำเข้าข้อมูลจาก Excel</h2>
+        <p class="text-gray-500 mb-6">เลือกไฟล์ <span class="font-bold text-blue-600">รายการสินทรัพย์.xlsx</span> เพื่อนำข้อมูลรถเข้าสู่ฐานข้อมูล Firebase อัตโนมัติ</p>
+
+        <div class="mb-6">
+            <input type="file" id="fileInput" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500
+                file:mr-4 file:py-3 file:px-6
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-green-50 file:text-green-700
+                hover:file:bg-green-100 cursor-pointer border border-gray-300 rounded-full"
+            />
+        </div>
+
+        <div id="statusBox" class="hidden bg-blue-50 text-blue-800 p-4 rounded-lg mb-4 text-left font-semibold">
+            <span id="statusText" class="animate-pulse">กำลังเตรียมการนำเข้า...</span>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+        // เชื่อมต่อ Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
+            authDomain: "suchartstudio-9a78d.firebaseapp.com",
+            databaseURL: "https://suchartstudio-9a78d-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "suchartstudio-9a78d",
+            storageBucket: "suchartstudio-9a78d.firebasestorage.app",
+            messagingSenderId: "953369646185",
+            appId: "1:953369646185:web:9f2a9f8b7faf596a6ebef8"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const statusBox = document.getElementById('statusBox');
+            const statusText = document.getElementById('statusText');
+            statusBox.classList.remove('hidden');
+            statusText.innerText = "กำลังอ่านไฟล์ Excel...";
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    statusText.innerText = `พบข้อมูลทั้งหมด ${jsonData.length} รายการ เริ่มการบันทึก...`;
+
+                    const vehiclesRef = ref(db, 'vehicles');
+                    let count = 0;
+
+                    // วนลูปอ่านข้อมูลทีละแถว และจัดรูปแบบสำหรับ Firebase
+                    for (const row of jsonData) {
+                        const newVehicleRef = push(vehiclesRef);
+                        
+                        await set(newVehicleRef, {
+                            assetId: row['รหัสสินทรัพย์'] ? String(row['รหัสสินทรัพย์']) : "",
+                            assetName: row['ชื่อสินทรัพย์'] || "ไม่ระบุชื่อสินทรัพย์",
+                            subType: row['ชนิดย่อยสินทรัพย์'] || "ไม่ระบุ",
+                            department: row['สถานที่ตั้ง'] || "ไม่ระบุ",
+                            licensePlate: "",       // เว้นว่างไว้เพื่อไปอัปเดตในหน้า Admin ทีหลัง
+                            taxExpiry: "",          // เว้นว่างไว้เพื่อไปอัปเดตในหน้า Admin ทีหลัง
+                            responsiblePerson: "",  // เว้นว่างไว้เพื่อไปอัปเดตในหน้า Admin ทีหลัง
+                            imageUrl: "",
+                            createdAt: new Date().toISOString()
+                        });
+                        
+                        count++;
+                        // อัปเดตสถานะแบบ Realtime
+                        statusText.innerText = `กำลังอัปโหลดขึ้นฐานข้อมูล... (${count} / ${jsonData.length})`;
+                    }
+
+                    Swal.fire({
+                        title: 'นำเข้าข้อมูลสำเร็จ!',
+                        text: `เพิ่มข้อมูลยานพาหนะจำนวน ${count} รายการ เรียบร้อยแล้ว`,
+                        icon: 'success',
+                        confirmButtonColor: '#10b981'
+                    }).then(() => {
+                        statusText.innerText = "นำเข้าข้อมูลเสร็จสิ้น 🎉 สามารถปิดหน้านี้หรือลบไฟล์นี้ทิ้งได้เลย";
+                        statusText.classList.remove('animate-pulse');
+                    });
+
+                } catch (error) {
+                    console.error("Error importing data:", error);
+                    Swal.fire('ข้อผิดพลาด!', 'เกิดข้อผิดพลาดระหว่างนำเข้าข้อมูล', 'error');
+                    statusText.innerText = "เกิดข้อผิดพลาด กรุณาตรวจสอบไฟล์อีกครั้ง";
+                }
+            };
+            
+            // สั่งอ่านไฟล์แบบ ArrayBuffer เพื่อรองรับ Excel
+            reader.readAsArrayBuffer(file);
+        });
+    </script>
+</body>
+</html>
