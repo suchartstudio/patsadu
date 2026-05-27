@@ -18,63 +18,71 @@
         <div class="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <h1 class="text-2xl font-bold">📊 ระบบรายงานสถานะยานพาหนะ เทศบาลนครขอนแก่น</h1>
             <div class="flex gap-3">
-                <a href="index.html" class="bg-blue-900 border border-blue-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-800 transition">🏠 กลับหน้าหลัก Portal</a>
-                <a href="admin.html" class="bg-white text-[#1e3a8a] px-4 py-2 rounded-md font-semibold hover:bg-gray-200 transition">หน้าผู้ดูแลระบบ</a>
+                <a href="index.html" class="bg-blue-900 border border-blue-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-800 transition shadow-sm">🏠 กลับหน้าหลัก Portal</a>
+                <a href="admin.html" class="bg-white text-[#1e3a8a] px-4 py-2 rounded-md font-semibold hover:bg-gray-200 transition shadow-sm">⚙️ หน้าผู้ดูแลระบบ</a>
             </div>
         </div>
     </nav>
 
-    <main class="container mx-auto px-6 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="card border-l-4 border-blue-600">
-                <h3 class="text-gray-500 font-semibold mb-1">จำนวนรถทั้งหมด</h3>
-                <p class="text-4xl font-bold text-[#1e3a8a]" id="totalVehicles">0</p>
-                <p class="text-sm text-gray-400 mt-2">คัน</p>
-            </div>
-            <div class="card border-l-4 border-green-500">
-                <h3 class="text-gray-500 font-semibold mb-1">ประเภทรถที่มีมากที่สุด</h3>
-                <p class="text-3xl font-bold text-green-700" id="topType">-</p>
-            </div>
-            <div class="card border-l-4 border-orange-500">
-                <h3 class="text-gray-500 font-semibold mb-1">หน่วยงานที่ดูแลมากที่สุด</h3>
-                <p class="text-3xl font-bold text-orange-700" id="topDept">-</p>
-            </div>
+    <main class="container mx-auto px-6 py-8 max-w-7xl">
+        
+        <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปจำนวนยานพาหนะ</h2>
+        <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="col-span-full text-center text-gray-500 py-4">กำลังโหลดข้อมูลสรุป...</div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="card">
-                <h3 class="text-xl font-semibold mb-4 text-[#1e3a8a]">สัดส่วนประเภทรถ (7 อันดับแรก)</h3>
-                <div class="relative w-full h-80">
-                    <canvas id="typeChart"></canvas>
+        <div class="bg-white rounded-xl shadow-md border-t-4 border-[#1e3a8a] overflow-hidden">
+            
+            <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div class="w-full md:w-1/3 relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">🔍</span>
+                    <input type="text" id="searchInput" placeholder="ค้นหา: ทะเบียน, รหัส, ชื่อรถ, ผู้รับผิดชอบ..." 
+                           class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]">
+                </div>
+                
+                <div class="w-full md:w-2/3 flex flex-col md:flex-row gap-4 justify-end">
+                    <select id="typeFilter" class="w-full md:w-auto px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] bg-white">
+                        <option value="">-- ทุกประเภทรถ --</option>
+                    </select>
+                    
+                    <select id="deptFilter" class="w-full md:w-auto px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] bg-white">
+                        <option value="">-- ทุกหน่วยงาน --</option>
+                    </select>
                 </div>
             </div>
-            <div class="card">
-                <h3 class="text-xl font-semibold mb-4 text-[#1e3a8a]">จำนวนรถแบ่งตามหน่วยงาน (10 อันดับแรก)</h3>
-                <div class="relative w-full h-80">
-                    <canvas id="deptChart"></canvas>
-                </div>
-            </div>
-        </div>
 
-        <div class="card">
-            <h3 class="text-2xl font-semibold mb-4 text-red-600">⚠️ รายการยานพาหนะที่ใกล้ครบกำหนดต่อทะเบียน</h3>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
+                <table class="w-full text-left border-collapse min-w-[800px]">
                     <thead>
-                        <tr class="bg-gray-100 text-gray-700">
-                            <th class="p-4 rounded-tl-lg">รูปภาพ</th>
-                            <th class="p-4">ทะเบียนรถ</th>
-                            <th class="p-4">ชื่อสินทรัพย์ / ชนิดรถ</th>
-                            <th class="p-4">หน่วยงาน</th>
+                        <tr class="bg-[#1e3a8a] text-white">
+                            <th class="p-4">รูปภาพ</th>
+                            <th class="p-4">ทะเบียนรถ / รหัส</th>
+                            <th class="p-4">ชื่อสินทรัพย์ / ประเภท</th>
+                            <th class="p-4">หน่วยงานที่ดูแล</th>
                             <th class="p-4">ผู้รับผิดชอบ</th>
-                            <th class="p-4 rounded-tr-lg">วันครบกำหนด</th>
+                            <th class="p-4">วันต่อภาษี</th>
                         </tr>
                     </thead>
-                    <tbody id="expiringTableBody">
-                        <tr><td colspan="6" class="p-4 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                    <tbody id="dataTableBody">
+                        <tr><td colspan="6" class="p-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
                     </tbody>
                 </table>
             </div>
+
+            <div class="bg-gray-50 p-4 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-gray-600 font-medium" id="pageInfo">
+                    แสดงรายการที่ 0 ถึง 0 จากทั้งหมด 0 รายการ
+                </div>
+                <div class="flex gap-2">
+                    <button id="prevBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition">
+                        ◀ ก่อนหน้า
+                    </button>
+                    <button id="nextBtn" class="px-4 py-2 bg-[#1e3a8a] text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 transition">
+                        ถัดไป ▶
+                    </button>
+                </div>
+            </div>
+
         </div>
     </main>
 
@@ -82,7 +90,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
-        // เชื่อมต่อ Firebase
+        // ==========================================
+        // 1. ตั้งค่า Firebase
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
             authDomain: "suchartstudio-9a78d.firebaseapp.com",
@@ -92,163 +102,223 @@
             messagingSenderId: "953369646185",
             appId: "1:953369646185:web:9f2a9f8b7faf596a6ebef8"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        
-        let typeChartInstance = null;
-        let deptChartInstance = null;
 
-        // ดึงข้อมูล Realtime
+        // ==========================================
+        // 2. ตัวแปรสำหรับระบบตาราง & กรองข้อมูล
+        // ==========================================
+        let allVehicles = [];      // เก็บข้อมูลทั้งหมดจาก Database
+        let filteredVehicles = []; // เก็บข้อมูลที่ถูกกรองแล้ว
+        let currentPage = 1;
+        const itemsPerPage = 50;   // จำนวนรายการต่อหน้า
+
+        // ==========================================
+        // 3. ดึงข้อมูลแบบ Realtime จาก Firebase
+        // ==========================================
         onValue(ref(db, 'vehicles'), (snapshot) => {
             const data = snapshot.val();
             if (!data) {
-                document.getElementById('expiringTableBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center">ไม่มีข้อมูลในระบบ</td></tr>';
+                document.getElementById('dataTableBody').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-500 font-bold">ไม่พบข้อมูลในระบบ</td></tr>';
+                document.getElementById('summaryCards').innerHTML = '';
                 return;
             }
 
-            const vehicles = Object.values(data);
-            document.getElementById('totalVehicles').innerText = vehicles.length;
+            allVehicles = Object.values(data).reverse(); // Reverse เพื่อให้ข้อมูลใหม่สุดขึ้นก่อน
             
-            const typesCount = {};
-            const deptsCount = {};
+            updateSummaryCards(allVehicles);
+            populateFilterOptions(allVehicles);
             
-            // นับจำนวนแยกตามประเภทและหน่วยงาน
-            vehicles.forEach(v => {
-                if(v.subType && v.subType.trim() !== "") {
-                    typesCount[v.subType] = (typesCount[v.subType] || 0) + 1;
-                }
-                if(v.department && v.department.trim() !== "") {
-                    deptsCount[v.department] = (deptsCount[v.department] || 0) + 1;
-                }
-            });
-
-            // อัปเดตการ์ด 2 ใบ
-            document.getElementById('topType').innerText = Object.keys(typesCount).sort((a,b) => typesCount[b]-typesCount[a])[0] || '-';
-            document.getElementById('topDept').innerText = Object.keys(deptsCount).sort((a,b) => deptsCount[b]-deptsCount[a])[0] || '-';
-
-            // วาดกราฟและตาราง
-            updateCharts(typesCount, deptsCount);
-            updateExpiringTable(vehicles);
+            // เริ่มการกรองและแสดงผลครั้งแรก
+            applyFilters();
         });
 
-        // ฟังก์ชันช่วยจัดกลุ่มให้เหลือแค่ Top N (ที่เหลือรวบเป็นคำว่า 'อื่นๆ')
-        function getTopItems(dataObj, topN) {
-            const sorted = Object.entries(dataObj).sort((a, b) => b[1] - a[1]);
-            const top = sorted.slice(0, topN);
-            const others = sorted.slice(topN).reduce((sum, item) => sum + item[1], 0);
-            
-            const result = Object.fromEntries(top);
-            if (others > 0) result['อื่นๆ (รวม)'] = others;
-            return result;
-        }
-
-        // ฟังก์ชันวาดกราฟ
-        function updateCharts(typesCount, deptsCount) {
-            if(typeChartInstance) typeChartInstance.destroy();
-            if(deptChartInstance) deptChartInstance.destroy();
-
-            // คัดเอาเฉพาะ 7 ชนิดรถแรก และ 10 หน่วยงานแรก
-            const topTypes = getTopItems(typesCount, 7);
-            const topDepts = getTopItems(deptsCount, 10);
-
-            // โทนสี
-            const chartColors = [
-                '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
-                '#8b5cf6', '#06b6d4', '#ec4899', '#94a3b8'
-            ];
-
-            const typeCtx = document.getElementById('typeChart').getContext('2d');
-            typeChartInstance = new Chart(typeCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(topTypes),
-                    datasets: [{ 
-                        data: Object.values(topTypes), 
-                        backgroundColor: chartColors 
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'right' } // ย้ายคำอธิบายไปด้านขวาให้อ่านง่าย
-                    }
-                }
+        // ==========================================
+        // 4. ฟังก์ชันสร้างป้ายสรุป 8 ป้าย (รวม + Top 7)
+        // ==========================================
+        function updateSummaryCards(dataList) {
+            const typesCount = {};
+            dataList.forEach(v => {
+                const type = (v.subType && v.subType.trim() !== "") ? v.subType.trim() : "ไม่ระบุประเภท";
+                typesCount[type] = (typesCount[type] || 0) + 1;
             });
 
-            const deptCtx = document.getElementById('deptChart').getContext('2d');
-            deptChartInstance = new Chart(deptCtx, {
-                type: 'bar',
-                data: {
-                    labels: Object.keys(topDepts),
-                    datasets: [{ 
-                        label: 'จำนวนรถ (คัน)', 
-                        data: Object.values(topDepts), 
-                        backgroundColor: '#1e3a8a' 
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    scales: { 
-                        y: { beginAtZero: true } 
-                    },
-                    plugins: {
-                        legend: { display: false } // ปิด Legend ด้านบน เพราะแกน X บอกชื่ออยู่แล้ว
-                    }
-                }
+            // เรียงลำดับประเภทรถที่มีมากที่สุด เอาแค่ 7 อันดับแรก
+            const sortedTypes = Object.entries(typesCount)
+                                      .sort((a, b) => b[1] - a[1])
+                                      .slice(0, 7);
+
+            const cardsContainer = document.getElementById('summaryCards');
+            cardsContainer.innerHTML = '';
+
+            // 1. ป้ายรวมทั้งหมด (สีน้ำเงินเด่นสุด)
+            cardsContainer.innerHTML += `
+                <div class="bg-gradient-to-r from-[#1e3a8a] to-blue-600 text-white p-5 rounded-xl shadow">
+                    <h3 class="text-blue-100 font-semibold mb-1">ยอดรวมทั้งหมด</h3>
+                    <p class="text-4xl font-bold">${dataList.length} <span class="text-lg font-normal">คัน</span></p>
+                </div>
+            `;
+
+            // 2. ป้าย Top 7 ประเภทรถ
+            const colors = ['bg-blue-50', 'bg-green-50', 'bg-orange-50', 'bg-purple-50', 'bg-pink-50', 'bg-teal-50', 'bg-gray-50'];
+            const textColors = ['text-blue-800', 'text-green-800', 'text-orange-800', 'text-purple-800', 'text-pink-800', 'text-teal-800', 'text-gray-800'];
+
+            sortedTypes.forEach((item, index) => {
+                const typeName = item[0];
+                const count = item[1];
+                const bgColor = colors[index % colors.length];
+                const textColor = textColors[index % textColors.length];
+
+                cardsContainer.innerHTML += `
+                    <div class="${bgColor} border border-gray-100 p-5 rounded-xl shadow-sm hover:shadow-md transition">
+                        <h3 class="text-gray-500 font-semibold mb-1 truncate" title="${typeName}">${typeName}</h3>
+                        <p class="text-3xl font-bold ${textColor}">${count} <span class="text-sm text-gray-500 font-normal">คัน</span></p>
+                    </div>
+                `;
             });
         }
 
-        // ฟังก์ชันอัปเดตตารางรถที่ใกล้หมดอายุ
-        function updateExpiringTable(vehicles) {
-            const tbody = document.getElementById('expiringTableBody');
+        // ==========================================
+        // 5. เตรียมตัวเลือกสำหรับ Dropdown
+        // ==========================================
+        function populateFilterOptions(dataList) {
+            const types = new Set();
+            const depts = new Set();
+
+            dataList.forEach(v => {
+                if(v.subType) types.add(v.subType.trim());
+                if(v.department) depts.add(v.department.trim());
+            });
+
+            const typeSelect = document.getElementById('typeFilter');
+            const deptSelect = document.getElementById('deptFilter');
+
+            // เก็บค่าเดิมที่เลือกไว้ก่อนล้างข้อมูล (เผื่อรีเฟรชข้อมูลแบบเรียลไทม์)
+            const currentType = typeSelect.value;
+            const currentDept = deptSelect.value;
+
+            typeSelect.innerHTML = '<option value="">-- ทุกประเภทรถ --</option>';
+            Array.from(types).sort().forEach(t => {
+                if(t) typeSelect.innerHTML += `<option value="${t}">${t}</option>`;
+            });
+
+            deptSelect.innerHTML = '<option value="">-- ทุกหน่วยงาน --</option>';
+            Array.from(depts).sort().forEach(d => {
+                if(d) deptSelect.innerHTML += `<option value="${d}">${d}</option>`;
+            });
+
+            // คืนค่าที่เคยเลือก
+            typeSelect.value = currentType;
+            deptSelect.value = currentDept;
+        }
+
+        // ==========================================
+        // 6. ฟังก์ชันกรองข้อมูล (Search & Filter)
+        // ==========================================
+        function applyFilters() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
+            const typeFilter = document.getElementById('typeFilter').value;
+            const deptFilter = document.getElementById('deptFilter').value;
+
+            filteredVehicles = allVehicles.filter(v => {
+                // เช็คคำค้นหา (หาใน ทะเบียน, รหัสสินทรัพย์, ชื่อรถ, ชื่อผู้รับผิดชอบ)
+                const textToSearch = `${v.licensePlate || ''} ${v.assetId || ''} ${v.assetName || ''} ${v.responsiblePerson || ''}`.toLowerCase();
+                const matchKeyword = textToSearch.includes(keyword);
+                
+                // เช็ค Dropdown
+                const matchType = (typeFilter === "") || (v.subType === typeFilter);
+                const matchDept = (deptFilter === "") || (v.department === deptFilter);
+
+                return matchKeyword && matchType && matchDept;
+            });
+
+            currentPage = 1; // กลับไปหน้าแรกเสมอเมื่อกรองข้อมูลใหม่
+            renderTable();
+        }
+
+        // ==========================================
+        // 7. ฟังก์ชันวาดตารางและระบบแบ่งหน้า
+        // ==========================================
+        function renderTable() {
+            const tbody = document.getElementById('dataTableBody');
             tbody.innerHTML = '';
-            
-            // กรองเอาเฉพาะคันที่มีการตั้งวันที่ต่อภาษีไว้
-            const sortedVehicles = vehicles
-                .filter(v => v.taxExpiry && v.taxExpiry !== "")
-                .sort((a, b) => new Date(a.taxExpiry) - new Date(b.taxExpiry))
-                .slice(0, 15); // แสดงมากสุด 15 คัน
 
-            if(sortedVehicles.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">ยังไม่พบข้อมูลการตั้งวันต่อทะเบียนในระบบ (สามารถไปเพิ่มได้ที่หน้าผู้ดูแลระบบ)</td></tr>';
-                return;
+            const totalItems = filteredVehicles.length;
+            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
+            // หา Index เริ่มต้นและสิ้นสุดของหน้าปัจจุบัน
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+
+            const paginatedData = filteredVehicles.slice(startIndex, endIndex);
+
+            if (paginatedData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500 font-medium">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</td></tr>';
+            } else {
+                paginatedData.forEach(v => {
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b hover:bg-blue-50 transition duration-150";
+                    
+                    const imgCell = v.imageUrl 
+                        ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md shadow-sm border">` 
+                        : '<div class="w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-400 border border-dashed">ไม่มีรูป</div>';
+
+                    // ไฮไลต์สีวันที่ถ้าหมดอายุหรือใกล้หมดอายุ
+                    let dateColor = "text-gray-700";
+                    if(v.taxExpiry) {
+                        const diffDays = Math.ceil((new Date(v.taxExpiry) - new Date()) / (1000 * 60 * 60 * 24));
+                        if(diffDays < 0) dateColor = "text-red-600 font-bold bg-red-100 px-2 py-1 rounded-md";
+                        else if (diffDays <= 30) dateColor = "text-orange-600 font-bold bg-orange-100 px-2 py-1 rounded-md";
+                    }
+
+                    tr.innerHTML = `
+                        <td class="p-4">${imgCell}</td>
+                        <td class="p-4">
+                            <div class="font-bold text-lg text-gray-800">${v.licensePlate || '<span class="text-gray-400 text-sm">ไม่มีทะเบียน</span>'}</div>
+                            <div class="text-sm text-gray-500 font-mono mt-1">ID: ${v.assetId || '-'}</div>
+                        </td>
+                        <td class="p-4">
+                            <div class="font-semibold text-[#1e3a8a] line-clamp-2">${v.assetName || '-'}</div>
+                            <div class="text-sm text-blue-600 bg-blue-100 inline-block px-2 py-0.5 rounded mt-1">${v.subType || 'ไม่ระบุ'}</div>
+                        </td>
+                        <td class="p-4 font-medium text-gray-700">${v.department || '-'}</td>
+                        <td class="p-4 text-gray-600">${v.responsiblePerson || '-'}</td>
+                        <td class="p-4"><span class="${dateColor}">${v.taxExpiry || '-'}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
             }
 
-            sortedVehicles.forEach(v => {
-                const tr = document.createElement('tr');
-                tr.className = "border-b hover:bg-gray-50";
-                
-                const imgCell = v.imageUrl 
-                    ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md shadow">` 
-                    : '<div class="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-400">ไม่มีรูป</div>';
-                
-                const expiryDate = new Date(v.taxExpiry);
-                const today = new Date();
-                const diffTime = expiryDate - today;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                
-                // แจ้งเตือนสีแดง(หมดอายุ) หรือ สีส้ม(ใกล้หมดอายุ)
-                let dateColor = "text-gray-800";
-                if(diffDays < 0) dateColor = "text-red-600 font-bold bg-red-50 px-2 py-1 rounded";
-                else if (diffDays <= 30) dateColor = "text-orange-600 font-bold bg-orange-50 px-2 py-1 rounded";
+            // อัปเดตข้อความบอกหน้า และสถานะปุ่มกด
+            document.getElementById('pageInfo').innerText = totalItems > 0 
+                ? `แสดงรายการที่ ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${totalItems} รายการ`
+                : `ไม่มีรายการให้แสดงผล`;
 
-                tr.innerHTML = `
-                    <td class="p-4">${imgCell}</td>
-                    <td class="p-4 font-bold text-lg">${v.licensePlate || '-'}</td>
-                    <td class="p-4">
-                        <div class="font-semibold text-[#1e3a8a]">${v.assetName || '-'}</div>
-                        <div class="text-sm text-gray-500">รหัสสินทรัพย์: ${v.assetId || '-'} | ชนิด: ${v.subType || '-'}</div>
-                    </td>
-                    <td class="p-4">${v.department || '-'}</td>
-                    <td class="p-4">${v.responsiblePerson || '-'}</td>
-                    <td class="p-4"><span class="${dateColor}">${v.taxExpiry || '-'}</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage === totalPages;
         }
+
+        // ==========================================
+        // 8. Event Listeners คอยจับตาการค้นหา/คลิก
+        // ==========================================
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('typeFilter').addEventListener('change', applyFilters);
+        document.getElementById('deptFilter').addEventListener('change', applyFilters);
+
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+            }
+        });
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTable();
+            }
+        });
     </script>
 </body>
 </html>
