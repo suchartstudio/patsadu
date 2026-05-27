@@ -13,6 +13,7 @@
 </head>
 <body class="text-slate-800">
 
+    <!-- Navbar -->
     <nav class="bg-[#1e3a8a] text-white shadow-md">
         <div class="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <h1 class="text-2xl font-bold">⚙️ จัดการข้อมูลยานพาหนะ (Admin)</h1>
@@ -23,58 +24,89 @@
         </div>
     </nav>
 
-    <main class="container mx-auto px-6 py-10 max-w-4xl">
-        <div class="bg-white p-8 rounded-xl shadow-md border-t-4 border-[#1e3a8a]">
-            <h2 class="text-2xl font-bold mb-6 text-[#1e3a8a]">เพิ่มข้อมูลยานพาหนะใหม่</h2>
+    <main class="container mx-auto px-6 py-10 max-w-6xl">
+        
+        <!-- ฟอร์มเพิ่ม/แก้ไขข้อมูล -->
+        <div class="bg-white p-8 rounded-xl shadow-md border-t-4 border-[#1e3a8a] mb-10">
+            <h2 id="formTitle" class="text-2xl font-bold mb-6 text-[#1e3a8a]">เพิ่มข้อมูลยานพาหนะใหม่</h2>
             
             <form id="vehicleForm" class="space-y-6">
+                <!-- ฟิลด์ซ่อนสำหรับเก็บ ID และ URL รูปเดิมกรณีแก้ไข -->
+                <input type="hidden" id="editingId" value="">
+                <input type="hidden" id="oldImageUrl" value="">
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-gray-700 font-semibold mb-2">รหัสสินทรัพย์</label>
-                        <input type="text" id="assetId" required class="w-full px-4 py-3 border rounded-lg bg-gray-50" placeholder="เช่น 246600003">
+                        <input type="text" id="assetId" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none" placeholder="เช่น 246600003">
                     </div>
                     <div>
                         <label class="block text-gray-700 font-semibold mb-2">ชื่อสินทรัพย์</label>
-                        <input type="text" id="assetName" required class="w-full px-4 py-3 border rounded-lg bg-gray-50" placeholder="เช่น รถจักรยานยนต์...">
+                        <input type="text" id="assetName" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none" placeholder="เช่น รถจักรยานยนต์...">
                     </div>
                     <div>
                         <label class="block text-gray-700 font-semibold mb-2">ชนิดย่อยสินทรัพย์</label>
-                        <input type="text" id="subType" required class="w-full px-4 py-3 border rounded-lg bg-gray-50" placeholder="เช่น รถบรรทุก / รถจักรยานยนต์">
+                        <input type="text" id="subType" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none" placeholder="เช่น รถบรรทุก / รถจักรยานยนต์">
                     </div>
                     <div>
                         <label class="block text-gray-700 font-semibold mb-2">สถานที่ตั้ง (หน่วยงาน)</label>
-                        <input type="text" id="department" required class="w-full px-4 py-3 border rounded-lg bg-gray-50" placeholder="เช่น สำนักสาธารณสุข">
+                        <input type="text" id="department" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none" placeholder="เช่น สำนักสาธารณสุข">
                     </div>
                     <div>
                         <label class="block text-[#1e3a8a] font-semibold mb-2">หมายเลขทะเบียนรถ</label>
-                        <input type="text" id="licensePlate" required class="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" placeholder="เช่น 2กธ 4606 ขอนแก่น">
+                        <input type="text" id="licensePlate" class="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-none" placeholder="เช่น 2กธ 4606 ขอนแก่น">
                     </div>
                     <div>
                         <label class="block text-red-600 font-semibold mb-2">วันครบกำหนดต่อภาษี</label>
-                        <input type="date" id="taxExpiry" required class="w-full px-4 py-3 border-2 border-red-200 rounded-lg">
+                        <input type="date" id="taxExpiry" class="w-full px-4 py-3 border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none">
                     </div>
                     <div>
                         <label class="block text-[#1e3a8a] font-semibold mb-2">ผู้รับผิดชอบ</label>
-                        <input type="text" id="responsiblePerson" required class="w-full px-4 py-3 border-2 border-blue-200 rounded-lg" placeholder="ชื่อ-นามสกุล">
+                        <input type="text" id="responsiblePerson" class="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-none" placeholder="ชื่อ-นามสกุล">
                     </div>
                     <div>
-                        <label class="block text-[#1e3a8a] font-semibold mb-2">ภาพถ่ายตัวรถ</label>
+                        <label class="block text-[#1e3a8a] font-semibold mb-2">ภาพถ่ายตัวรถ <span class="text-sm font-normal text-gray-500" id="imageHint">(ปล่อยว่างได้หากไม่ต้องการเปลี่ยน)</span></label>
                         <input type="file" id="vehicleImage" accept="image/*" class="w-full px-4 py-2 border-2 border-blue-200 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                     </div>
                 </div>
 
-                <div class="pt-6">
-                    <button type="submit" id="submitBtn" class="w-full bg-[#1e3a8a] hover:bg-blue-800 text-white font-bold py-4 rounded-lg shadow-lg text-xl">
-                        บันทึกข้อมูลเข้าระบบ
+                <div class="pt-6 flex gap-4">
+                    <button type="submit" id="submitBtn" class="flex-1 bg-[#1e3a8a] hover:bg-blue-800 text-white font-bold py-4 rounded-lg shadow-lg text-xl transition">
+                        บันทึกข้อมูล
+                    </button>
+                    <button type="button" id="cancelEditBtn" class="hidden bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-4 px-8 rounded-lg shadow-lg text-xl transition" onclick="cancelEdit()">
+                        ยกเลิกแก้ไข
                     </button>
                 </div>
             </form>
         </div>
+
+        <!-- ตารางแสดงข้อมูลทั้งหมด -->
+        <div class="bg-white p-8 rounded-xl shadow-md">
+            <h2 class="text-2xl font-bold mb-6 text-gray-800">📋 รายการยานพาหนะในระบบ</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-700">
+                            <th class="p-3 rounded-tl-lg">รูปภาพ</th>
+                            <th class="p-3">รหัส / ทะเบียน</th>
+                            <th class="p-3">ชื่อสินทรัพย์ / หน่วยงาน</th>
+                            <th class="p-3">วันครบกำหนด</th>
+                            <th class="p-3 text-center rounded-tr-lg">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <tr><td colspan="5" class="p-4 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-        import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+        import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
@@ -91,16 +123,69 @@
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dk0ypev4m/image/upload";
         const UPLOAD_PRESET = "khonkaen_preset";
 
+        let vehiclesData = {}; // เก็บข้อมูลไว้สำหรับอ้างอิงตอนกด Edit
+
+        // โหลดข้อมูลขึ้นตาราง
+        onValue(ref(db, 'vehicles'), (snapshot) => {
+            const data = snapshot.val();
+            const tbody = document.getElementById('dataTableBody');
+            
+            if (!data) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-red-500">ไม่มีข้อมูลในระบบ</td></tr>';
+                vehiclesData = {};
+                return;
+            }
+
+            vehiclesData = data;
+            tbody.innerHTML = '';
+
+            // เรียงจากข้อมูลใหม่ล่าสุดไปเก่า
+            const entries = Object.entries(data).reverse();
+
+            entries.forEach(([id, v]) => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50";
+                
+                const imgCell = v.imageUrl 
+                    ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md shadow">` 
+                    : '<div class="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">ไม่มีรูป</div>';
+
+                tr.innerHTML = `
+                    <td class="p-3">${imgCell}</td>
+                    <td class="p-3">
+                        <div class="font-bold text-gray-800">${v.licensePlate || '-'}</div>
+                        <div class="text-sm text-gray-500">รหัส: ${v.assetId || '-'}</div>
+                    </td>
+                    <td class="p-3">
+                        <div class="font-semibold text-[#1e3a8a]">${v.assetName || '-'}</div>
+                        <div class="text-sm text-gray-500">${v.department || '-'} | ${v.subType || '-'}</div>
+                    </td>
+                    <td class="p-3 ${v.taxExpiry ? 'text-gray-800' : 'text-gray-400'}">${v.taxExpiry || 'ยังไม่ระบุ'}</td>
+                    <td class="p-3 text-center">
+                        <div class="flex justify-center gap-2">
+                            <button onclick="editVehicle('${id}')" class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm shadow">แก้ไข</button>
+                            <button onclick="deleteVehicle('${id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm shadow">ลบ</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        });
+
+        // จัดการฟอร์ม (บันทึกข้อมูลใหม่ หรือ อัปเดตข้อมูลเดิม)
         document.getElementById('vehicleForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
+            const editingId = document.getElementById('editingId').value;
+            
             submitBtn.disabled = true;
-            submitBtn.innerHTML = 'กำลังบันทึกข้อมูล...';
+            submitBtn.innerHTML = 'กำลังบันทึกข้อมูล... ⏳';
 
             try {
-                let imageUrl = "";
+                let imageUrl = document.getElementById('oldImageUrl').value; // ใช้รูปเดิมเป็นค่าเริ่มต้น
                 const fileInput = document.getElementById('vehicleImage').files[0];
 
+                // ถ้ามีการอัปโหลดไฟล์ใหม่ ให้ส่งไป Cloudinary
                 if (fileInput) {
                     const formData = new FormData();
                     formData.append('file', fileInput);
@@ -119,22 +204,99 @@
                     licensePlate: document.getElementById('licensePlate').value,
                     taxExpiry: document.getElementById('taxExpiry').value,
                     responsiblePerson: document.getElementById('responsiblePerson').value,
-                    imageUrl: imageUrl,
-                    createdAt: new Date().toISOString()
+                    imageUrl: imageUrl
                 };
 
-                await set(push(ref(db, 'vehicles')), vehicleData);
+                if (editingId) {
+                    // อัปเดตข้อมูลเดิม
+                    await update(ref(db, 'vehicles/' + editingId), vehicleData);
+                    Swal.fire({ title: 'อัปเดตสำเร็จ!', text: 'แก้ไขข้อมูลเรียบร้อย', icon: 'success', confirmButtonColor: '#1e3a8a' });
+                } else {
+                    // เพิ่มข้อมูลใหม่
+                    vehicleData.createdAt = new Date().toISOString();
+                    await set(push(ref(db, 'vehicles')), vehicleData);
+                    Swal.fire({ title: 'บันทึกสำเร็จ!', text: 'เพิ่มข้อมูลเรียบร้อย', icon: 'success', confirmButtonColor: '#1e3a8a' });
+                }
 
-                Swal.fire({ title: 'บันทึกสำเร็จ!', text: 'เพิ่มข้อมูลเรียบร้อย', icon: 'success', confirmButtonColor: '#1e3a8a' });
-                document.getElementById('vehicleForm').reset();
+                // คืนค่าฟอร์มกลับเป็นโหมดปกติ
+                window.cancelEdit();
+
             } catch (error) {
                 console.error(error);
                 Swal.fire('ผิดพลาด!', 'ไม่สามารถบันทึกข้อมูลได้', 'error');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = 'บันทึกข้อมูลเข้าระบบ';
+                submitBtn.innerHTML = editingId ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล';
             }
         });
+
+        // ฟังก์ชันลบข้อมูล (ถูกเรียกจากปุ่มในตาราง)
+        window.deleteVehicle = (id) => {
+            Swal.fire({
+                title: 'ยืนยันการลบ?',
+                text: "หากลบแล้วจะไม่สามารถกู้คืนข้อมูลได้!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'ใช่, ลบเลย!',
+                cancelButtonText: 'ยกเลิก'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        await remove(ref(db, 'vehicles/' + id));
+                        Swal.fire('ลบแล้ว!', 'ข้อมูลถูกลบออกจากระบบ', 'success');
+                    } catch (error) {
+                        Swal.fire('ผิดพลาด!', 'ไม่สามารถลบข้อมูลได้', 'error');
+                    }
+                }
+            });
+        };
+
+        // ฟังก์ชันแก้ไขข้อมูล (ดึงข้อมูลใส่ฟอร์ม)
+        window.editVehicle = (id) => {
+            const v = vehiclesData[id];
+            if(!v) return;
+
+            document.getElementById('formTitle').innerText = '✏️ แก้ไขข้อมูลยานพาหนะ';
+            document.getElementById('formTitle').classList.replace('text-[#1e3a8a]', 'text-yellow-600');
+            
+            document.getElementById('editingId').value = id;
+            document.getElementById('oldImageUrl').value = v.imageUrl || '';
+            
+            document.getElementById('assetId').value = v.assetId || '';
+            document.getElementById('assetName').value = v.assetName || '';
+            document.getElementById('subType').value = v.subType || '';
+            document.getElementById('department').value = v.department || '';
+            document.getElementById('licensePlate').value = v.licensePlate || '';
+            document.getElementById('taxExpiry').value = v.taxExpiry || '';
+            document.getElementById('responsiblePerson').value = v.responsiblePerson || '';
+            
+            document.getElementById('submitBtn').innerText = 'อัปเดตข้อมูล';
+            document.getElementById('submitBtn').classList.replace('bg-[#1e3a8a]', 'bg-yellow-500');
+            document.getElementById('submitBtn').classList.replace('hover:bg-blue-800', 'hover:bg-yellow-600');
+            
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            
+            // เลื่อนหน้าจอขึ้นไปที่ฟอร์ม
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // ฟังก์ชันยกเลิกการแก้ไข
+        window.cancelEdit = () => {
+            document.getElementById('vehicleForm').reset();
+            document.getElementById('editingId').value = '';
+            document.getElementById('oldImageUrl').value = '';
+            
+            document.getElementById('formTitle').innerText = 'เพิ่มข้อมูลยานพาหนะใหม่';
+            document.getElementById('formTitle').classList.replace('text-yellow-600', 'text-[#1e3a8a]');
+            
+            document.getElementById('submitBtn').innerText = 'บันทึกข้อมูล';
+            document.getElementById('submitBtn').classList.replace('bg-yellow-500', 'bg-[#1e3a8a]');
+            document.getElementById('submitBtn').classList.replace('hover:bg-yellow-600', 'hover:bg-blue-800');
+            
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        };
     </script>
 </body>
 </html>
