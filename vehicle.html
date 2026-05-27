@@ -5,94 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบรายงานสถานะยานพาหนะ - เทศบาลนครขอนแก่น</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 1.125rem; }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; }
+        
+        /* ตั้งค่าสำหรับการพิมพ์ (Print) */
+        @media print {
+            body { background-color: white; font-size: 14pt !important; }
+            /* ซ่อน UI ทั้งหมดของหน้าเว็บปกติ */
+            #main-ui, nav, #vehicleModal { display: none !important; }
+            /* แสดงเฉพาะพื้นที่สำหรับพิมพ์ */
+            #printArea { display: block !important; }
+            @page { size: A4 portrait; margin: 1.5cm; }
+            
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+            th, td { border: 1px solid #999; padding: 8px; text-align: left; }
+            th { background-color: #e5e7eb !important; -webkit-print-color-adjust: exact; }
+        }
     </style>
 </head>
 <body class="text-slate-800">
 
-    <nav class="bg-[#1e3a8a] text-white shadow-md">
-        <div class="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h1 class="text-2xl font-bold">📊 ระบบรายงานสถานะยานพาหนะ เทศบาลนครขอนแก่น</h1>
-            <div class="flex gap-3">
-                <a href="index.html" class="bg-blue-900 border border-blue-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-800 transition shadow-sm">🏠 กลับหน้าหลัก Portal</a>
-                <a href="admin.html" class="bg-white text-[#1e3a8a] px-4 py-2 rounded-md font-semibold hover:bg-gray-200 transition shadow-sm">⚙️ หน้าผู้ดูแลระบบ</a>
-            </div>
-        </div>
-    </nav>
+    <div id="printArea" class="hidden"></div>
 
-    <main class="container mx-auto px-6 py-8 max-w-7xl">
-        
-        <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปจำนวนยานพาหนะ</h2>
-        <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="col-span-full text-center text-gray-500 py-4">กำลังโหลดข้อมูลสรุป...</div>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-md border-t-4 border-[#1e3a8a] overflow-hidden">
-            
-            <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-col md:flex-row gap-4 justify-between items-center">
-                <div class="w-full md:w-1/3 relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">🔍</span>
-                    <input type="text" id="searchInput" placeholder="ค้นหา: ทะเบียน, รหัส, ชื่อรถ, ผู้รับผิดชอบ..." 
-                           class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]">
+    <div id="main-ui">
+        <nav class="bg-[#1e3a8a] text-white shadow-md">
+            <div class="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <h1 class="text-2xl font-bold">📊 ระบบรายงานสถานะยานพาหนะ เทศบาลนครขอนแก่น</h1>
+                <div class="flex gap-3">
+                    <a href="index.html" class="bg-blue-900 border border-blue-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-800 transition shadow-sm">🏠 กลับหน้าหลัก</a>
+                    <a href="admin.html" class="bg-white text-[#1e3a8a] px-4 py-2 rounded-md font-semibold hover:bg-gray-200 transition shadow-sm">⚙️ จัดการข้อมูล</a>
                 </div>
-                
-                <div class="w-full md:w-2/3 flex flex-col md:flex-row gap-4 justify-end">
-                    <select id="typeFilter" class="w-full md:w-auto px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] bg-white">
-                        <option value="">-- ทุกประเภทรถ --</option>
-                    </select>
+            </div>
+        </nav>
+
+        <main class="container mx-auto px-6 py-8 max-w-7xl">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปจำนวนยานพาหนะ</h2>
+            <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="col-span-full text-center text-gray-500 py-4">กำลังโหลดข้อมูลสรุป...</div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border-t-4 border-[#1e3a8a] overflow-hidden">
+                <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-col lg:flex-row gap-4 justify-between items-center">
+                    <div class="w-full lg:w-1/3 relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">🔍</span>
+                        <input type="text" id="searchInput" placeholder="ค้นหา: ทะเบียน, รหัส, ชื่อรถ, ผู้รับผิดชอบ..." 
+                               class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]">
+                    </div>
                     
-                    <select id="deptFilter" class="w-full md:w-auto px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] bg-white">
-                        <option value="">-- ทุกหน่วยงาน --</option>
-                    </select>
+                    <div class="w-full lg:w-2/3 flex flex-wrap gap-4 justify-end items-center">
+                        <select id="typeFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] bg-white">
+                            <option value="">-- ทุกประเภทรถ --</option>
+                        </select>
+                        <select id="deptFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] bg-white">
+                            <option value="">-- ทุกหน่วยงาน --</option>
+                        </select>
+                        <button onclick="printReport()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow transition">
+                            🖨️ พิมพ์รายการนี้
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="bg-[#1e3a8a] text-white">
+                                <th class="p-4">รูปภาพ</th>
+                                <th class="p-4">ทะเบียนรถ / รหัส</th>
+                                <th class="p-4">ชื่อสินทรัพย์ / ประเภท</th>
+                                <th class="p-4">หน่วยงานที่ดูแล</th>
+                                <th class="p-4">ผู้รับผิดชอบ</th>
+                                <th class="p-4">วันต่อภาษี</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <tr><td colspan="6" class="p-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-gray-50 p-4 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div class="text-gray-600 font-medium" id="pageInfo">แสดงรายการที่ 0 ถึง 0 จากทั้งหมด 0 รายการ</div>
+                    <div class="flex gap-2">
+                        <button id="prevBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition">◀ ก่อนหน้า</button>
+                        <button id="nextBtn" class="px-4 py-2 bg-[#1e3a8a] text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 transition">ถัดไป ▶</button>
+                    </div>
                 </div>
             </div>
+        </main>
+    </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[800px]">
-                    <thead>
-                        <tr class="bg-[#1e3a8a] text-white">
-                            <th class="p-4">รูปภาพ</th>
-                            <th class="p-4">ทะเบียนรถ / รหัส</th>
-                            <th class="p-4">ชื่อสินทรัพย์ / ประเภท</th>
-                            <th class="p-4">หน่วยงานที่ดูแล</th>
-                            <th class="p-4">ผู้รับผิดชอบ</th>
-                            <th class="p-4">วันต่อภาษี</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody">
-                        <tr><td colspan="6" class="p-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
-                    </tbody>
-                </table>
+    <div id="vehicleModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-auto overflow-hidden transform scale-95 transition-transform duration-200 ease-out" id="modalContent">
+            <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center">
+                <h3 class="text-xl font-bold">📋 รายละเอียดข้อมูลยานพาหนะ</h3>
+                <button onclick="closeModal()" class="text-white hover:text-red-300 text-3xl leading-none">&times;</button>
             </div>
-
-            <div class="bg-gray-50 p-4 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div class="text-gray-600 font-medium" id="pageInfo">
-                    แสดงรายการที่ 0 ถึง 0 จากทั้งหมด 0 รายการ
+            <div class="p-6 md:p-8" id="modalBody">
                 </div>
-                <div class="flex gap-2">
-                    <button id="prevBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 transition">
-                        ◀ ก่อนหน้า
-                    </button>
-                    <button id="nextBtn" class="px-4 py-2 bg-[#1e3a8a] text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 transition">
-                        ถัดไป ▶
-                    </button>
-                </div>
+            <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
+                <button onclick="closeModal()" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold transition">ปิดหน้าต่าง</button>
             </div>
-
         </div>
-    </main>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
-        // ==========================================
-        // 1. ตั้งค่า Firebase
-        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
             authDomain: "suchartstudio-9a78d.firebaseapp.com",
@@ -105,37 +126,27 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // ==========================================
-        // 2. ตัวแปรสำหรับระบบตาราง & กรองข้อมูล
-        // ==========================================
-        let allVehicles = [];      // เก็บข้อมูลทั้งหมดจาก Database
-        let filteredVehicles = []; // เก็บข้อมูลที่ถูกกรองแล้ว
+        let allVehicles = [];
+        let filteredVehicles = [];
         let currentPage = 1;
-        const itemsPerPage = 50;   // จำนวนรายการต่อหน้า
+        const itemsPerPage = 50;
 
-        // ==========================================
-        // 3. ดึงข้อมูลแบบ Realtime จาก Firebase
-        // ==========================================
+        // ดึงข้อมูล Realtime
         onValue(ref(db, 'vehicles'), (snapshot) => {
             const data = snapshot.val();
             if (!data) {
                 document.getElementById('dataTableBody').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-500 font-bold">ไม่พบข้อมูลในระบบ</td></tr>';
-                document.getElementById('summaryCards').innerHTML = '';
                 return;
             }
 
-            allVehicles = Object.values(data).reverse(); // Reverse เพื่อให้ข้อมูลใหม่สุดขึ้นก่อน
+            // แปลงข้อมูลและเก็บ id ของ Firebase ไว้ใช้งาน
+            allVehicles = Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse();
             
             updateSummaryCards(allVehicles);
             populateFilterOptions(allVehicles);
-            
-            // เริ่มการกรองและแสดงผลครั้งแรก
             applyFilters();
         });
 
-        // ==========================================
-        // 4. ฟังก์ชันสร้างป้ายสรุป 8 ป้าย (รวม + Top 7)
-        // ==========================================
         function updateSummaryCards(dataList) {
             const typesCount = {};
             dataList.forEach(v => {
@@ -143,48 +154,30 @@
                 typesCount[type] = (typesCount[type] || 0) + 1;
             });
 
-            // เรียงลำดับประเภทรถที่มีมากที่สุด เอาแค่ 7 อันดับแรก
-            const sortedTypes = Object.entries(typesCount)
-                                      .sort((a, b) => b[1] - a[1])
-                                      .slice(0, 7);
-
+            const sortedTypes = Object.entries(typesCount).sort((a, b) => b[1] - a[1]).slice(0, 7);
             const cardsContainer = document.getElementById('summaryCards');
-            cardsContainer.innerHTML = '';
-
-            // 1. ป้ายรวมทั้งหมด (สีน้ำเงินเด่นสุด)
-            cardsContainer.innerHTML += `
+            cardsContainer.innerHTML = `
                 <div class="bg-gradient-to-r from-[#1e3a8a] to-blue-600 text-white p-5 rounded-xl shadow">
                     <h3 class="text-blue-100 font-semibold mb-1">ยอดรวมทั้งหมด</h3>
                     <p class="text-4xl font-bold">${dataList.length} <span class="text-lg font-normal">คัน</span></p>
                 </div>
             `;
 
-            // 2. ป้าย Top 7 ประเภทรถ
             const colors = ['bg-blue-50', 'bg-green-50', 'bg-orange-50', 'bg-purple-50', 'bg-pink-50', 'bg-teal-50', 'bg-gray-50'];
             const textColors = ['text-blue-800', 'text-green-800', 'text-orange-800', 'text-purple-800', 'text-pink-800', 'text-teal-800', 'text-gray-800'];
 
             sortedTypes.forEach((item, index) => {
-                const typeName = item[0];
-                const count = item[1];
-                const bgColor = colors[index % colors.length];
-                const textColor = textColors[index % textColors.length];
-
                 cardsContainer.innerHTML += `
-                    <div class="${bgColor} border border-gray-100 p-5 rounded-xl shadow-sm hover:shadow-md transition">
-                        <h3 class="text-gray-500 font-semibold mb-1 truncate" title="${typeName}">${typeName}</h3>
-                        <p class="text-3xl font-bold ${textColor}">${count} <span class="text-sm text-gray-500 font-normal">คัน</span></p>
+                    <div class="${colors[index % colors.length]} border border-gray-100 p-5 rounded-xl shadow-sm hover:shadow-md transition">
+                        <h3 class="text-gray-500 font-semibold mb-1 truncate" title="${item[0]}">${item[0]}</h3>
+                        <p class="text-3xl font-bold ${textColors[index % textColors.length]}">${item[1]} <span class="text-sm font-normal">คัน</span></p>
                     </div>
                 `;
             });
         }
 
-        // ==========================================
-        // 5. เตรียมตัวเลือกสำหรับ Dropdown
-        // ==========================================
         function populateFilterOptions(dataList) {
-            const types = new Set();
-            const depts = new Set();
-
+            const types = new Set(), depts = new Set();
             dataList.forEach(v => {
                 if(v.subType) types.add(v.subType.trim());
                 if(v.department) depts.add(v.department.trim());
@@ -192,64 +185,41 @@
 
             const typeSelect = document.getElementById('typeFilter');
             const deptSelect = document.getElementById('deptFilter');
-
-            // เก็บค่าเดิมที่เลือกไว้ก่อนล้างข้อมูล (เผื่อรีเฟรชข้อมูลแบบเรียลไทม์)
-            const currentType = typeSelect.value;
-            const currentDept = deptSelect.value;
+            const currentType = typeSelect.value, currentDept = deptSelect.value;
 
             typeSelect.innerHTML = '<option value="">-- ทุกประเภทรถ --</option>';
-            Array.from(types).sort().forEach(t => {
-                if(t) typeSelect.innerHTML += `<option value="${t}">${t}</option>`;
-            });
+            Array.from(types).sort().forEach(t => typeSelect.innerHTML += `<option value="${t}">${t}</option>`);
 
             deptSelect.innerHTML = '<option value="">-- ทุกหน่วยงาน --</option>';
-            Array.from(depts).sort().forEach(d => {
-                if(d) deptSelect.innerHTML += `<option value="${d}">${d}</option>`;
-            });
+            Array.from(depts).sort().forEach(d => deptSelect.innerHTML += `<option value="${d}">${d}</option>`);
 
-            // คืนค่าที่เคยเลือก
             typeSelect.value = currentType;
             deptSelect.value = currentDept;
         }
 
-        // ==========================================
-        // 6. ฟังก์ชันกรองข้อมูล (Search & Filter)
-        // ==========================================
         function applyFilters() {
             const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
             const typeFilter = document.getElementById('typeFilter').value;
             const deptFilter = document.getElementById('deptFilter').value;
 
             filteredVehicles = allVehicles.filter(v => {
-                // เช็คคำค้นหา (หาใน ทะเบียน, รหัสสินทรัพย์, ชื่อรถ, ชื่อผู้รับผิดชอบ)
                 const textToSearch = `${v.licensePlate || ''} ${v.assetId || ''} ${v.assetName || ''} ${v.responsiblePerson || ''}`.toLowerCase();
                 const matchKeyword = textToSearch.includes(keyword);
-                
-                // เช็ค Dropdown
                 const matchType = (typeFilter === "") || (v.subType === typeFilter);
                 const matchDept = (deptFilter === "") || (v.department === deptFilter);
-
                 return matchKeyword && matchType && matchDept;
             });
 
-            currentPage = 1; // กลับไปหน้าแรกเสมอเมื่อกรองข้อมูลใหม่
+            currentPage = 1;
             renderTable();
         }
 
-        // ==========================================
-        // 7. ฟังก์ชันวาดตารางและระบบแบ่งหน้า
-        // ==========================================
         function renderTable() {
             const tbody = document.getElementById('dataTableBody');
             tbody.innerHTML = '';
-
             const totalItems = filteredVehicles.length;
-            const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-
-            // หา Index เริ่มต้นและสิ้นสุดของหน้าปัจจุบัน
             const startIndex = (currentPage - 1) * itemsPerPage;
             const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-
             const paginatedData = filteredVehicles.slice(startIndex, endIndex);
 
             if (paginatedData.length === 0) {
@@ -257,13 +227,15 @@
             } else {
                 paginatedData.forEach(v => {
                     const tr = document.createElement('tr');
-                    tr.className = "border-b hover:bg-blue-50 transition duration-150";
+                    // เพิ่ม cursor-pointer เพื่อบ่งบอกว่ากดคลิกได้
+                    tr.className = "border-b hover:bg-blue-50 transition duration-150 cursor-pointer";
+                    // เมื่อกดคลิกที่แถว ให้เรียกฟังก์ชันเปิด Modal
+                    tr.onclick = () => window.showModal(v.id);
                     
                     const imgCell = v.imageUrl 
                         ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md shadow-sm border">` 
                         : '<div class="w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-400 border border-dashed">ไม่มีรูป</div>';
 
-                    // ไฮไลต์สีวันที่ถ้าหมดอายุหรือใกล้หมดอายุ
                     let dateColor = "text-gray-700";
                     if(v.taxExpiry) {
                         const diffDays = Math.ceil((new Date(v.taxExpiry) - new Date()) / (1000 * 60 * 60 * 24));
@@ -289,36 +261,137 @@
                 });
             }
 
-            // อัปเดตข้อความบอกหน้า และสถานะปุ่มกด
-            document.getElementById('pageInfo').innerText = totalItems > 0 
-                ? `แสดงรายการที่ ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${totalItems} รายการ`
-                : `ไม่มีรายการให้แสดงผล`;
-
+            document.getElementById('pageInfo').innerText = totalItems > 0 ? `แสดงรายการที่ ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${totalItems} รายการ` : `ไม่มีรายการให้แสดงผล`;
             document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === totalPages;
+            document.getElementById('nextBtn').disabled = currentPage === Math.ceil(totalItems / itemsPerPage) || 1;
         }
 
         // ==========================================
-        // 8. Event Listeners คอยจับตาการค้นหา/คลิก
+        // ฟังก์ชันสำหรับ Modal (Pop-up)
         // ==========================================
+        window.showModal = (id) => {
+            const v = allVehicles.find(x => x.id === id);
+            if(!v) return;
+
+            const modalBody = document.getElementById('modalBody');
+            const imgDisplay = v.imageUrl 
+                ? `<img src="${v.imageUrl}" class="w-full max-w-[250px] h-auto object-cover rounded-xl shadow-lg border-2 border-gray-100">`
+                : `<div class="w-full max-w-[250px] h-48 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-300">ไม่มีรูปภาพ</div>`;
+
+            let dateDisplay = '<span class="text-gray-500">-</span>';
+            if(v.taxExpiry) {
+                const diffDays = Math.ceil((new Date(v.taxExpiry) - new Date()) / (1000 * 60 * 60 * 24));
+                if(diffDays < 0) dateDisplay = `<span class="text-red-600 font-bold bg-red-100 px-3 py-1 rounded-md">หมดอายุเมื่อ ${v.taxExpiry}</span>`;
+                else if (diffDays <= 30) dateDisplay = `<span class="text-orange-600 font-bold bg-orange-100 px-3 py-1 rounded-md">ใกล้ครบกำหนด ${v.taxExpiry}</span>`;
+                else dateDisplay = `<span class="text-green-700 font-bold bg-green-100 px-3 py-1 rounded-md">ครบกำหนด ${v.taxExpiry}</span>`;
+            }
+
+            modalBody.innerHTML = `
+                <div class="flex flex-col md:flex-row gap-8">
+                    <div class="md:w-1/3 flex justify-center items-start">${imgDisplay}</div>
+                    <div class="md:w-2/3 grid grid-cols-2 gap-y-6 gap-x-4">
+                        <div class="col-span-2 md:col-span-1">
+                            <p class="text-sm text-gray-500 font-semibold mb-1">หมายเลขทะเบียนรถ</p>
+                            <p class="font-bold text-2xl text-[#1e3a8a] bg-blue-50 px-3 py-1 inline-block rounded border border-blue-100">${v.licensePlate || 'ไม่มีทะเบียน'}</p>
+                        </div>
+                        <div class="col-span-2 md:col-span-1">
+                            <p class="text-sm text-gray-500 font-semibold mb-1">วันต่อภาษีประจำปี</p>
+                            <p class="text-lg">${dateDisplay}</p>
+                        </div>
+                        <div class="col-span-2">
+                            <p class="text-sm text-gray-500 font-semibold mb-1">ชื่อสินทรัพย์</p>
+                            <p class="font-semibold text-gray-800 text-lg">${v.assetName || '-'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold mb-1">รหัสสินทรัพย์</p>
+                            <p class="text-gray-800 font-mono">${v.assetId || '-'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold mb-1">ประเภทรถ</p>
+                            <p class="text-blue-700 font-medium">${v.subType || '-'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold mb-1">หน่วยงานที่ดูแล</p>
+                            <p class="text-gray-800">${v.department || '-'}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 font-semibold mb-1">ผู้รับผิดชอบ</p>
+                            <p class="text-gray-800">${v.responsiblePerson || '-'}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const modal = document.getElementById('vehicleModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => content.classList.remove('scale-95'), 10);
+        };
+
+        window.closeModal = () => {
+            const modal = document.getElementById('vehicleModal');
+            const content = document.getElementById('modalContent');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        };
+
+        // ==========================================
+        // ฟังก์ชันสั่งพิมพ์ (Print Report - A4)
+        // ==========================================
+        window.printReport = () => {
+            const printArea = document.getElementById('printArea');
+            const curDate = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            let html = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <h2 style="font-size: 24pt; margin: 0; padding: 0;">รายงานสถานะยานพาหนะ เทศบาลนครขอนแก่น</h2>
+                    <p style="font-size: 14pt; color: #555; margin-top: 5px;">
+                        ยอดรวมรายการที่กรอง: ${filteredVehicles.length} คัน &nbsp;|&nbsp; ข้อมูล ณ วันที่: ${curDate}
+                    </p>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 5%; text-align: center;">ลำดับ</th>
+                            <th style="width: 15%;">ทะเบียนรถ</th>
+                            <th style="width: 15%;">รหัสสินทรัพย์</th>
+                            <th style="width: 25%;">ชื่อ/ประเภทรถ</th>
+                            <th style="width: 15%;">หน่วยงาน</th>
+                            <th style="width: 15%;">ผู้รับผิดชอบ</th>
+                            <th style="width: 10%;">วันต่อภาษี</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // นำข้อมูล "ทั้งหมด" ที่กำลังกรองอยู่ มาสร้างตารางพิมพ์
+            filteredVehicles.forEach((v, index) => {
+                html += `
+                    <tr>
+                        <td style="text-align: center;">${index + 1}</td>
+                        <td style="font-weight: bold;">${v.licensePlate || '-'}</td>
+                        <td>${v.assetId || '-'}</td>
+                        <td>${v.assetName || '-'}<br><span style="font-size: 0.9em; color: #666;">${v.subType || '-'}</span></td>
+                        <td>${v.department || '-'}</td>
+                        <td>${v.responsiblePerson || '-'}</td>
+                        <td>${v.taxExpiry || '-'}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `</tbody></table>`;
+            printArea.innerHTML = html;
+
+            // สั่งบราวเซอร์เปิดหน้าพิมพ์
+            window.print();
+        };
+
+        // Event Listeners
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('typeFilter').addEventListener('change', applyFilters);
         document.getElementById('deptFilter').addEventListener('change', applyFilters);
-
-        document.getElementById('prevBtn').addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderTable();
-            }
-        });
-
-        document.getElementById('nextBtn').addEventListener('click', () => {
-            const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderTable();
-            }
-        });
+        document.getElementById('prevBtn').addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderTable(); }});
+        document.getElementById('nextBtn').addEventListener('click', () => { if(currentPage < Math.ceil(filteredVehicles.length / itemsPerPage)) { currentPage++; renderTable(); }});
     </script>
 </body>
 </html>
