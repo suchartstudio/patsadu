@@ -28,17 +28,14 @@
         </div>
 
         <div id="dashboardContent" class="hidden">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="card border-t-4 border-green-600 flex flex-col justify-center items-center">
-                    <h3 class="text-gray-500 font-semibold mb-2">จำนวนรายการทั้งหมดใน Sheet</h3>
-                    <p class="text-5xl font-bold text-green-700" id="totalRecords">0</p>
-                    <p class="text-sm text-gray-400 mt-2">รายการ (แถว)</p>
+            <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปข้อมูลวงเงินงบประมาณ</h2>
+            <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
                 </div>
-                <div class="card md:col-span-2">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-700" id="chartTitle">วิเคราะห์สัดส่วนข้อมูล</h3>
-                    <div class="relative w-full h-64">
-                        <canvas id="mainChart"></canvas>
-                    </div>
+
+            <div class="card mb-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" id="chartTitle">วิเคราะห์สัดส่วนข้อมูล</h3>
+                <div class="relative w-full h-64">
+                    <canvas id="mainChart"></canvas>
                 </div>
             </div>
 
@@ -74,9 +71,9 @@
     </main>
 
     <div id="sheetModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full mx-auto overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-auto overflow-hidden flex flex-col max-h-[90vh]">
             <div class="bg-green-700 text-white p-5 flex justify-between items-center">
-                <h3 class="text-xl font-bold">📋 รายละเอียดข้อมูลแบบเต็ม</h3>
+                <h3 class="text-xl font-bold">📋 รายละเอียดโครงการแบบเต็ม</h3>
                 <button onclick="closeModal()" class="text-white hover:text-green-300 text-3xl leading-none">&times;</button>
             </div>
             <div class="p-6 md:p-8 overflow-y-auto bg-gray-50" id="modalBody">
@@ -88,30 +85,29 @@
     </div>
 
     <script>
-        // แปลง URL แชร์ เป็น URL สำหรับการ Export CSV
         const SHEET_ID = "1B2-0bB79ftvpEcWTq5wITVb9XlVdZ2g1c1-1ruD_2Bg";
         const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 
         let allData = [];
         let filteredData = [];
         let headers = [];
-        let displayHeaders = []; // เอาไว้แสดงแค่ 5 คอลัมน์แรกในตารางกันหน้าเละ
+        
+        const displayHeaders = ["ปีงบ", "ชื่อโครงการ", "ชุมชน", "วงเงิน"]; 
+        
         let currentPage = 1;
         const itemsPerPage = 30;
         let mainChart = null;
 
-        // 1. โหลดและแปลงข้อมูลด้วย PapaParse
+        // 1. โหลดข้อมูล
         Papa.parse(SHEET_CSV_URL, {
             download: true,
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
-                // กรองแถวที่ว่างเปล่าออก
                 allData = results.data.filter(row => Object.values(row).some(val => val !== ""));
                 
                 if(allData.length > 0) {
                     headers = Object.keys(allData[0]);
-                    displayHeaders = headers.slice(0, 5); // เลือกมาแสดงในตารางหลัก 5 คอลัมน์แรก
                     filteredData = [...allData];
                     initDashboard();
                 } else {
@@ -119,7 +115,7 @@
                 }
             },
             error: function(err) {
-                document.getElementById('loading').innerText = "❌ เกิดข้อผิดพลาดในการโหลดข้อมูล (โปรดตรวจสอบการตั้งค่าแชร์ไฟล์)";
+                document.getElementById('loading').innerText = "❌ เกิดข้อผิดพลาดในการโหลดข้อมูล";
             }
         });
 
@@ -127,137 +123,43 @@
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
 
-            document.getElementById('totalRecords').innerText = allData.length;
-
+            updateSummaryCards(allData); // เรียกฟังก์ชันสร้างป้ายสรุป
             drawSmartChart();
             renderTableHeader();
             renderTable();
         }
 
-        // 2. วิเคราะห์หาคอลัมน์ที่เหมาะสมสำหรับทำกราฟอัตโนมัติ
-        function drawSmartChart() {
-            let targetCol = null;
-            // หาคอลัมน์ที่มีค่าซ้ำกัน (เพื่อจัดหมวดหมู่) โดยมีกลุ่ม 2 - 15 กลุ่ม
-            for(let h of headers) {
-                let unique = new Set(allData.map(item => item[h]).filter(v => v));
-                if(unique.size >= 2 && unique.size <= 15) {
-                    targetCol = h;
-                    break;
-                }
-            }
-
-            if(targetCol) {
-                document.getElementById('chartTitle').innerText = `สัดส่วนข้อมูลแบ่งตาม: ${targetCol}`;
-                
-                let counts = {};
-                allData.forEach(item => {
-                    let val = item[targetCol] || 'ไม่ระบุ';
-                    counts[val] = (counts[val] || 0) + 1;
-                });
-
-                let sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
-                let labels = sorted.map(x => x[0]);
-                let data = sorted.map(x => x[1]);
-
-                const ctx = document.getElementById('mainChart').getContext('2d');
-                mainChart = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'จำนวนรายการ',
-                            data: data,
-                            backgroundColor: ['#16a34a', '#2563eb', '#d97706', '#dc2626', '#7c3aed', '#0891b2']
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-            } else {
-                document.getElementById('chartTitle').innerText = "ข้อมูลหลากหลายเกินไป ไม่สามารถจัดกลุ่มกราฟได้";
-            }
-        }
-
-        // 3. การแสดงผลตาราง (Table)
-        function renderTableHeader() {
-            let tr = '';
-            displayHeaders.forEach(h => tr += `<th class="p-4">${h}</th>`);
-            document.getElementById('tableHeader').innerHTML = tr;
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-
-            const totalItems = filteredData.length;
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-            const paginatedData = filteredData.slice(startIndex, endIndex);
-
-            if(paginatedData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="${displayHeaders.length}" class="p-8 text-center text-gray-500">ไม่พบข้อมูลที่ค้นหา</td></tr>`;
-                document.getElementById('pageInfo').innerText = "ไม่มีรายการให้แสดงผล";
-                return;
-            }
-
-            paginatedData.forEach(row => {
-                let tr = document.createElement('tr');
-                tr.className = "border-b bg-white hover:bg-green-50 transition duration-150 cursor-pointer";
-                tr.onclick = () => window.showModal(row); // ผูกเหตุการณ์คลิกเปิด Pop-up
-                
-                displayHeaders.forEach((h, index) => {
-                    let td = document.createElement('td');
-                    td.className = "p-4 text-gray-700";
-                    // ทำให้คอลัมน์แรกเป็นตัวหนา
-                    if(index === 0) td.classList.add("font-bold", "text-gray-900");
-                    td.innerText = row[h] || '-';
-                    tr.appendChild(td);
-                });
-                
-                tbody.appendChild(tr);
-            });
+        // 2. ฟังก์ชันคำนวณและสร้างป้ายสรุปวงเงิน (Total + Top 5)
+        function updateSummaryCards(dataList) {
+            let totalBudget = 0;
+            const deptBudget = {};
             
-            document.getElementById('pageInfo').innerText = `แสดงรายการที่ ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${totalItems} รายการ`;
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage >= Math.ceil(totalItems / itemsPerPage);
-        }
+            // หาคอลัมน์ที่เป็น "วงเงิน" และ "หน่วยงาน/สำนัก/กอง" อัตโนมัติ
+            const budgetCol = headers.find(h => h && h.includes("วงเงิน")) || "วงเงิน";
+            const deptCol = headers.find(h => h && (h.includes("สำนัก") || h.includes("กอง") || h.includes("หน่วยงาน"))) || "หน่วยงาน";
 
-        // 4. ระบบค้นหา (ค้นได้จากทุกคอลัมน์)
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            let keyword = e.target.value.toLowerCase().trim();
-            if(!keyword) {
-                filteredData = [...allData];
-            } else {
-                filteredData = allData.filter(row => {
-                    return headers.some(h => (row[h] || '').toLowerCase().includes(keyword));
-                });
-            }
-            currentPage = 1;
-            renderTable();
-        });
+            // ฟังก์ชันแปลงข้อความตัวเลข (เช่น "1,200,000") เป็นตัวเลขคำนวณได้
+            const parseBudget = (val) => {
+                if (!val) return 0;
+                let num = parseFloat(String(val).replace(/,/g, '').trim());
+                return isNaN(num) ? 0 : num;
+            };
 
-        // เปลี่ยนหน้า
-        document.getElementById('prevBtn').addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderTable(); }});
-        document.getElementById('nextBtn').addEventListener('click', () => { if(currentPage < Math.ceil(filteredData.length / itemsPerPage)) { currentPage++; renderTable(); }});
-
-        // 5. ระบบ Pop-up รายละเอียดเต็มรูปแบบ (ดึงคอลัมน์ทั้งหมดมาแสดง)
-        window.showModal = (row) => {
-            let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
-            headers.forEach(h => {
-                html += `
-                <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                    <p class="text-sm text-green-700 font-semibold mb-1">${h}</p>
-                    <p class="text-lg text-gray-800 break-words">${row[h] || '<span class="text-gray-400">-</span>'}</p>
-                </div>`;
+            dataList.forEach(row => {
+                let amount = parseBudget(row[budgetCol]);
+                totalBudget += amount;
+                
+                let dept = row[deptCol] || 'ไม่ระบุสำนัก/กอง';
+                dept = dept.trim();
+                deptBudget[dept] = (deptBudget[dept] || 0) + amount;
             });
-            html += '</div>';
 
-            document.getElementById('modalBody').innerHTML = html;
-            document.getElementById('sheetModal').classList.remove('hidden');
-        };
+            // เรียงลำดับสำนัก/กอง ที่มีวงเงินสูงสุด 5 อันดับแรก
+            const sortedDepts = Object.entries(deptBudget)
+                                      .sort((a, b) => b[1] - a[1])
+                                      .slice(0, 5);
 
-        window.closeModal = () => {
-            document.getElementById('sheetModal').classList.add('hidden');
-        };
-    </script>
-</body>
-</html>
+            const cardsContainer = document.getElementById('summaryCards');
+            const formatTHB = (num) => num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            // สร้างป้าย 1: ยอดรวมทั้งหมด
