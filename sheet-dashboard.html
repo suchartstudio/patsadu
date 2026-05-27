@@ -8,6 +8,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
+    
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 1.125rem; }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; }
@@ -16,7 +19,7 @@
 <body class="text-slate-800">
 
     <nav class="bg-[#166534] text-white shadow-md">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div class="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <h1 class="text-2xl font-bold">📈 ระบบฐานข้อมูลอัจฉริยะ (Google Sheets)</h1>
             <a href="index.html" class="bg-green-800 border border-green-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-green-700 transition shadow-sm">🏠 กลับหน้าหลัก Portal</a>
         </div>
@@ -28,23 +31,24 @@
         </div>
 
         <div id="dashboardContent" class="hidden">
+            
             <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปข้อมูลวงเงินงบประมาณ</h2>
             <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
                 </div>
 
             <div class="card mb-8">
                 <h3 class="text-lg font-semibold mb-4 text-gray-700" id="chartTitle">วิเคราะห์สัดส่วนข้อมูล</h3>
-                <div class="relative w-full h-64">
+                <div class="relative w-full h-64 md:h-80">
                     <canvas id="mainChart"></canvas>
                 </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-md border-t-4 border-green-600 overflow-hidden">
                 <div class="bg-gray-50 p-6 border-b border-gray-200">
-                    <div class="relative w-full md:w-1/2">
+                    <div class="relative w-full md:w-1/2 lg:w-1/3">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">🔍</span>
-                        <input type="text" id="searchInput" placeholder="พิมพ์เพื่อค้นหาข้อมูล (ค้นหาได้จากทุกคอลัมน์)..." 
-                               class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600">
+                        <input type="text" id="searchInput" placeholder="พิมพ์เพื่อค้นหาข้อมูล (ค้นได้จากทุกคอลัมน์)..." 
+                               class="w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 shadow-sm text-base">
                     </div>
                 </div>
 
@@ -59,11 +63,11 @@
                     </table>
                 </div>
                 
-                <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-between items-center">
-                    <div class="text-gray-600 font-medium" id="pageInfo">แสดงรายการ...</div>
-                    <div class="flex gap-2">
-                        <button id="prevBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50">◀ ก่อนหน้า</button>
-                        <button id="nextBtn" class="px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50">ถัดไป ▶</button>
+                <div class="bg-gray-50 p-4 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="text-gray-600 font-medium text-sm md:text-base" id="pageInfo">แสดงรายการ...</div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="prevBtn" class="flex-1 sm:flex-none px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50 transition">◀ ก่อนหน้า</button>
+                        <button id="nextBtn" class="flex-1 sm:flex-none px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50 transition">ถัดไป ▶</button>
                     </div>
                 </div>
             </div>
@@ -71,74 +75,88 @@
     </main>
 
     <div id="sheetModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-auto overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-auto overflow-hidden flex flex-col max-h-[90vh] transform scale-95 transition-transform duration-200 ease-out" id="modalContent">
             <div class="bg-green-700 text-white p-5 flex justify-between items-center">
                 <h3 class="text-xl font-bold">📋 รายละเอียดโครงการแบบเต็ม</h3>
-                <button onclick="closeModal()" class="text-white hover:text-green-300 text-3xl leading-none">&times;</button>
+                <button onclick="closeModal()" class="text-white hover:text-green-300 text-4xl leading-none">&times;</button>
             </div>
+            
             <div class="p-6 md:p-8 overflow-y-auto bg-gray-50" id="modalBody">
                 </div>
+            
             <div class="bg-white px-6 py-4 border-t border-gray-200 flex justify-end">
-                <button onclick="closeModal()" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold transition">ปิดหน้าต่าง</button>
+                <button onclick="closeModal()" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold transition shadow">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
 
     <script>
+        // กำหนด ID ของ Google Sheets
         const SHEET_ID = "1B2-0bB79ftvpEcWTq5wITVb9XlVdZ2g1c1-1ruD_2Bg";
         const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
 
+        // ตัวแปรระบบ
         let allData = [];
         let filteredData = [];
         let headers = [];
-        
         const displayHeaders = ["ปีงบ", "ชื่อโครงการ", "ชุมชน", "วงเงิน"]; 
-        
         let currentPage = 1;
         const itemsPerPage = 30;
         let mainChart = null;
 
-        // 1. โหลดข้อมูล
+        // 1. โหลดข้อมูลจาก Google Sheets (พร้อมระบบป้องกัน Error)
         Papa.parse(SHEET_CSV_URL, {
             download: true,
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
-                allData = results.data.filter(row => Object.values(row).some(val => val !== ""));
-                
-                if(allData.length > 0) {
-                    headers = Object.keys(allData[0]);
-                    filteredData = [...allData];
-                    initDashboard();
-                } else {
-                    document.getElementById('loading').innerText = "❌ ไม่พบข้อมูลใน Spreadsheet";
+                try {
+                    if (!results.data || results.data.length === 0) {
+                        document.getElementById('loading').innerHTML = "❌ ไม่พบข้อมูลใน Spreadsheet<br><span class='text-sm text-gray-400'>(หรืออาจจะยังไม่ได้เปิดแชร์ลิงก์เป็น 'ทุกคนที่มีลิงก์')</span>";
+                        return;
+                    }
+
+                    // กรองแถวที่ว่างเปล่าออกไป
+                    allData = results.data.filter(row => Object.values(row).some(val => val !== ""));
+                    
+                    if(allData.length > 0) {
+                        headers = Object.keys(allData[0]);
+                        filteredData = [...allData];
+                        initDashboard();
+                    } else {
+                        document.getElementById('loading').innerText = "❌ ไฟล์ Sheet ว่างเปล่า ไม่มีข้อมูล";
+                    }
+                } catch (err) {
+                    console.error(err);
+                    document.getElementById('loading').innerHTML = `❌ เกิดข้อผิดพลาดขณะประมวลผลข้อมูล<br><span class='text-sm text-red-400'>${err.message}</span>`;
                 }
             },
             error: function(err) {
-                document.getElementById('loading').innerText = "❌ เกิดข้อผิดพลาดในการโหลดข้อมูล";
+                document.getElementById('loading').innerHTML = "❌ ถูกปฏิเสธการเข้าถึงจาก Google<br><span class='text-sm text-gray-500'>กรุณาตรวจสอบว่าไฟล์ Sheet เปิดแชร์เป็น 'ทุกคนที่มีลิงก์' แล้วหรือไม่</span>";
             }
         });
 
+        // 2. ฟังก์ชันเริ่มต้นสร้าง Dashboard
         function initDashboard() {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
 
-            updateSummaryCards(allData); // เรียกฟังก์ชันสร้างป้ายสรุป
+            updateSummaryCards(allData); 
             drawSmartChart();
             renderTableHeader();
             renderTable();
         }
 
-        // 2. ฟังก์ชันคำนวณและสร้างป้ายสรุปวงเงิน (Total + Top 5)
+        // 3. ฟังก์ชันคำนวณและสร้างป้ายสรุปวงเงิน (ยอดรวม + 5 อันดับแรก)
         function updateSummaryCards(dataList) {
             let totalBudget = 0;
             const deptBudget = {};
             
-            // หาคอลัมน์ที่เป็น "วงเงิน" และ "หน่วยงาน/สำนัก/กอง" อัตโนมัติ
+            // หาคอลัมน์เป้าหมายอัตโนมัติ
             const budgetCol = headers.find(h => h && h.includes("วงเงิน")) || "วงเงิน";
             const deptCol = headers.find(h => h && (h.includes("สำนัก") || h.includes("กอง") || h.includes("หน่วยงาน"))) || "หน่วยงาน";
 
-            // ฟังก์ชันแปลงข้อความตัวเลข (เช่น "1,200,000") เป็นตัวเลขคำนวณได้
+            // แปลงค่าเงินเป็นตัวเลข
             const parseBudget = (val) => {
                 if (!val) return 0;
                 let num = parseFloat(String(val).replace(/,/g, '').trim());
@@ -154,12 +172,216 @@
                 deptBudget[dept] = (deptBudget[dept] || 0) + amount;
             });
 
-            // เรียงลำดับสำนัก/กอง ที่มีวงเงินสูงสุด 5 อันดับแรก
             const sortedDepts = Object.entries(deptBudget)
                                       .sort((a, b) => b[1] - a[1])
-                                      .slice(0, 5);
+                                      .slice(0, 5); // เอาแค่ 5 อันดับ
 
             const cardsContainer = document.getElementById('summaryCards');
             const formatTHB = (num) => num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-            // สร้างป้าย 1: ยอดรวมทั้งหมด
+            // ป้ายยาว: ยอดรวม
+            cardsContainer.innerHTML = `
+                <div class="col-span-2 md:col-span-3 lg:col-span-5 bg-gradient-to-r from-green-700 to-green-500 text-white p-6 rounded-xl shadow-md mb-2 flex flex-col justify-center items-center transform transition hover:scale-[1.01]">
+                    <h3 class="text-green-100 font-semibold mb-2 text-lg">ยอดรวมวงเงินทั้งหมดในระบบ</h3>
+                    <p class="text-4xl md:text-5xl font-bold tracking-tight">฿ ${formatTHB(totalBudget)}</p>
+                    <p class="text-green-100 text-sm mt-2 font-light">จากข้อมูลที่พบทั้งหมด ${dataList.length} โครงการ</p>
+                </div>
+            `;
+
+            // ป้ายเล็ก: 5 อันดับแรก
+            const colors = ['bg-blue-50', 'bg-orange-50', 'bg-purple-50', 'bg-pink-50', 'bg-teal-50'];
+            const borderColors = ['border-blue-200', 'border-orange-200', 'border-purple-200', 'border-pink-200', 'border-teal-200'];
+            const textColors = ['text-blue-800', 'text-orange-800', 'text-purple-800', 'text-pink-800', 'text-teal-800'];
+
+            sortedDepts.forEach((item, index) => {
+                cardsContainer.innerHTML += `
+                    <div class="${colors[index]} border ${borderColors[index]} p-5 rounded-xl shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                        <h3 class="text-gray-600 font-semibold mb-3 text-sm leading-tight" title="${item[0]}">${index + 1}. ${item[0]}</h3>
+                        <p class="text-xl lg:text-2xl font-bold ${textColors[index]} break-words">฿${formatTHB(item[1])}</p>
+                    </div>
+                `;
+            });
+        }
+
+        // 4. วิเคราะห์และวาดกราฟแท่งอัตโนมัติ
+        function drawSmartChart() {
+            if(mainChart) mainChart.destroy(); // เคลียร์กราฟเก่าถ้ามีการวาดใหม่
+            
+            let targetCol = null;
+            if (headers.includes("ปีงบ")) targetCol = "ปีงบ";
+            else if (headers.includes("สำนัก")) targetCol = "สำนัก";
+            else {
+                for(let h of headers) {
+                    let unique = new Set(allData.map(item => item[h]).filter(v => v));
+                    if(unique.size >= 2 && unique.size <= 20) {
+                        targetCol = h;
+                        break;
+                    }
+                }
+            }
+
+            if(targetCol) {
+                document.getElementById('chartTitle').innerText = `สัดส่วนข้อมูลแบ่งตาม: ${targetCol} (จำนวนโครงการ)`;
+                let counts = {};
+                filteredData.forEach(item => { // ใช้ filteredData เพื่อให้กราฟเปลี่ยนตามการค้นหา
+                    let val = item[targetCol] || 'ไม่ระบุ';
+                    counts[val] = (counts[val] || 0) + 1;
+                });
+
+                let sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+                let labels = sorted.map(x => x[0]);
+                let data = sorted.map(x => x[1]);
+
+                const ctx = document.getElementById('mainChart').getContext('2d');
+                mainChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'จำนวนโครงการ',
+                            data: data,
+                            backgroundColor: ['#16a34a', '#2563eb', '#d97706', '#dc2626', '#7c3aed', '#0891b2', '#475569']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            } else {
+                document.getElementById('chartTitle').innerText = "ข้อมูลหลากหลายเกินไป ไม่สามารถจัดกลุ่มกราฟได้";
+            }
+        }
+
+        // 5. แสดงผลตาราง (Table)
+        function renderTableHeader() {
+            let tr = '';
+            const colWidths = ["w-24", "w-auto", "w-48", "w-32"]; 
+            displayHeaders.forEach((h, index) => {
+                let align = h === "วงเงิน" ? "text-right" : "text-left";
+                tr += `<th class="p-4 ${colWidths[index] || ''} ${align}">${h}</th>`;
+            });
+            document.getElementById('tableHeader').innerHTML = tr;
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            const totalItems = filteredData.length;
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+            const paginatedData = filteredData.slice(startIndex, endIndex);
+
+            if(paginatedData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="${displayHeaders.length}" class="p-8 text-center text-gray-500">ไม่พบข้อมูลที่ตรงกับการค้นหา</td></tr>`;
+                document.getElementById('pageInfo').innerText = "ไม่มีรายการให้แสดงผล";
+                return;
+            }
+
+            paginatedData.forEach(row => {
+                let tr = document.createElement('tr');
+                tr.className = "border-b bg-white hover:bg-green-50 transition duration-150 cursor-pointer group";
+                tr.onclick = () => window.showModal(row);
+                
+                displayHeaders.forEach((h, index) => {
+                    let td = document.createElement('td');
+                    td.className = "p-4 text-gray-700";
+                    let val = row[h] || '-';
+                    
+                    if(h === "ปีงบ") {
+                        td.innerHTML = `<span class="bg-gray-100 text-gray-800 font-bold px-3 py-1 rounded-md border border-gray-200">${val}</span>`;
+                    } 
+                    else if (h === "ชื่อโครงการ") {
+                        td.innerHTML = `<div class="font-semibold text-green-800 group-hover:text-green-600 line-clamp-2">${val}</div>`;
+                    }
+                    else if (h === "วงเงิน") {
+                        let num = parseFloat(val.replace(/,/g, ''));
+                        if(!isNaN(num)) val = num.toLocaleString('th-TH', {minimumFractionDigits: 2});
+                        td.innerHTML = `<span class="text-orange-600 font-bold">฿${val}</span>`;
+                        td.className += " text-right font-mono";
+                    }
+                    else {
+                        td.innerText = val;
+                    }
+                    
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('pageInfo').innerText = `แสดงรายการที่ ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${totalItems} รายการ`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= Math.ceil(totalItems / itemsPerPage);
+        }
+
+        // 6. ระบบค้นหา Real-time
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            let keyword = e.target.value.toLowerCase().trim();
+            if(!keyword) {
+                filteredData = [...allData];
+            } else {
+                filteredData = allData.filter(row => {
+                    // ค้นหาคำจากทุกคอลัมน์ในแถวนั้น
+                    return headers.some(h => (row[h] || '').toLowerCase().includes(keyword));
+                });
+            }
+            currentPage = 1;
+            
+            // อัปเดตทุกอย่างตามข้อมูลที่ถูกกรอง
+            updateSummaryCards(filteredData); 
+            drawSmartChart(); // กราฟเปลี่ยนตามผลการค้นหาด้วย
+            renderTable();
+        });
+
+        // 7. ระบบ Pagination
+        document.getElementById('prevBtn').addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderTable(); }});
+        document.getElementById('nextBtn').addEventListener('click', () => { if(currentPage < Math.ceil(filteredData.length / itemsPerPage)) { currentPage++; renderTable(); }});
+
+        // 8. ระบบ Pop-up รายละเอียดเต็มรูปแบบ (Modal)
+        window.showModal = (row) => {
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+            
+            // แถบไฮไลต์ด้านบน
+            html += `<div class="col-span-1 md:col-span-2 mb-2 bg-green-50 p-5 rounded-xl border-l-4 border-green-600 shadow-sm">
+                        <h4 class="text-xl font-bold text-green-800 mb-2">${row["ชื่อโครงการ"] || 'ไม่มีชื่อโครงการ'}</h4>
+                        <p class="text-sm text-green-700 font-medium">
+                            ปีงบประมาณ: <span class="bg-green-200 text-green-900 px-2 py-0.5 rounded mr-3">${row["ปีงบ"] || '-'}</span>
+                            ชุมชน: <span class="bg-green-200 text-green-900 px-2 py-0.5 rounded">${row["ชุมชน"] || '-'}</span>
+                        </p>
+                    </div>`;
+
+            // ลูปสร้างกล่องข้อมูลสำหรับทุกคอลัมน์
+            headers.forEach(h => {
+                if(["ชื่อโครงการ", "ปีงบ", "ชุมชน"].includes(h)) return;
+
+                let val = row[h] || '<span class="text-gray-400">-</span>';
+                
+                // จัด format ตัวเลขให้คอลัมน์วงเงิน
+                if(h.includes("วงเงิน") && row[h]) {
+                    let num = parseFloat(row[h].replace(/,/g, ''));
+                    if(!isNaN(num)) val = '<span class="font-bold text-orange-600">฿ ' + num.toLocaleString('th-TH', {minimumFractionDigits: 2}) + '</span>';
+                }
+
+                html += `
+                <div class="bg-white p-4 rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition">
+                    <p class="text-sm text-gray-500 font-semibold mb-1">${h}</p>
+                    <p class="text-lg text-gray-800 break-words">${val}</p>
+                </div>`;
+            });
+            html += '</div>';
+
+            document.getElementById('modalBody').innerHTML = html;
+            
+            const modal = document.getElementById('sheetModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => content.classList.remove('scale-95'), 10);
+        };
+
+        window.closeModal = () => {
+            const modal = document.getElementById('sheetModal');
+            const content = document.getElementById('modalContent');
+            content.classList.add('scale-95');
+            setTimeout(() => modal.classList.add('hidden'), 200);
+        };
+    </script>
+</body>
+</html>
