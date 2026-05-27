@@ -43,14 +43,14 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div class="card">
-                <h3 class="text-xl font-semibold mb-4 text-[#1e3a8a]">สัดส่วนประเภทรถ</h3>
-                <div class="h-64 relative">
+                <h3 class="text-xl font-semibold mb-4 text-[#1e3a8a]">สัดส่วนประเภทรถ (7 อันดับแรก)</h3>
+                <div class="relative w-full h-80">
                     <canvas id="typeChart"></canvas>
                 </div>
             </div>
             <div class="card">
-                <h3 class="text-xl font-semibold mb-4 text-[#1e3a8a]">จำนวนรถแบ่งตามหน่วยงาน</h3>
-                <div class="h-64 relative">
+                <h3 class="text-xl font-semibold mb-4 text-[#1e3a8a]">จำนวนรถแบ่งตามหน่วยงาน (10 อันดับแรก)</h3>
+                <div class="relative w-full h-80">
                     <canvas id="deptChart"></canvas>
                 </div>
             </div>
@@ -82,6 +82,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
+        // เชื่อมต่อ Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
             authDomain: "suchartstudio-9a78d.firebaseapp.com",
@@ -98,6 +99,7 @@
         let typeChartInstance = null;
         let deptChartInstance = null;
 
+        // ดึงข้อมูล Realtime
         onValue(ref(db, 'vehicles'), (snapshot) => {
             const data = snapshot.val();
             if (!data) {
@@ -111,54 +113,107 @@
             const typesCount = {};
             const deptsCount = {};
             
+            // นับจำนวนแยกตามประเภทและหน่วยงาน
             vehicles.forEach(v => {
-                if(v.subType) typesCount[v.subType] = (typesCount[v.subType] || 0) + 1;
-                if(v.department) deptsCount[v.department] = (deptsCount[v.department] || 0) + 1;
+                if(v.subType && v.subType.trim() !== "") {
+                    typesCount[v.subType] = (typesCount[v.subType] || 0) + 1;
+                }
+                if(v.department && v.department.trim() !== "") {
+                    deptsCount[v.department] = (deptsCount[v.department] || 0) + 1;
+                }
             });
 
+            // อัปเดตการ์ด 2 ใบ
             document.getElementById('topType').innerText = Object.keys(typesCount).sort((a,b) => typesCount[b]-typesCount[a])[0] || '-';
             document.getElementById('topDept').innerText = Object.keys(deptsCount).sort((a,b) => deptsCount[b]-deptsCount[a])[0] || '-';
 
+            // วาดกราฟและตาราง
             updateCharts(typesCount, deptsCount);
             updateExpiringTable(vehicles);
         });
 
+        // ฟังก์ชันช่วยจัดกลุ่มให้เหลือแค่ Top N (ที่เหลือรวบเป็นคำว่า 'อื่นๆ')
+        function getTopItems(dataObj, topN) {
+            const sorted = Object.entries(dataObj).sort((a, b) => b[1] - a[1]);
+            const top = sorted.slice(0, topN);
+            const others = sorted.slice(topN).reduce((sum, item) => sum + item[1], 0);
+            
+            const result = Object.fromEntries(top);
+            if (others > 0) result['อื่นๆ (รวม)'] = others;
+            return result;
+        }
+
+        // ฟังก์ชันวาดกราฟ
         function updateCharts(typesCount, deptsCount) {
             if(typeChartInstance) typeChartInstance.destroy();
             if(deptChartInstance) deptChartInstance.destroy();
+
+            // คัดเอาเฉพาะ 7 ชนิดรถแรก และ 10 หน่วยงานแรก
+            const topTypes = getTopItems(typesCount, 7);
+            const topDepts = getTopItems(deptsCount, 10);
+
+            // โทนสี
+            const chartColors = [
+                '#3b82f6', '#10b981', '#f59e0b', '#ef4444', 
+                '#8b5cf6', '#06b6d4', '#ec4899', '#94a3b8'
+            ];
 
             const typeCtx = document.getElementById('typeChart').getContext('2d');
             typeChartInstance = new Chart(typeCtx, {
                 type: 'doughnut',
                 data: {
-                    labels: Object.keys(typesCount),
-                    datasets: [{ data: Object.values(typesCount), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'] }]
+                    labels: Object.keys(topTypes),
+                    datasets: [{ 
+                        data: Object.values(topTypes), 
+                        backgroundColor: chartColors 
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' } // ย้ายคำอธิบายไปด้านขวาให้อ่านง่าย
+                    }
+                }
             });
 
             const deptCtx = document.getElementById('deptChart').getContext('2d');
             deptChartInstance = new Chart(deptCtx, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(deptsCount),
-                    datasets: [{ label: 'จำนวนรถ (คัน)', data: Object.values(deptsCount), backgroundColor: '#1e3a8a' }]
+                    labels: Object.keys(topDepts),
+                    datasets: [{ 
+                        label: 'จำนวนรถ (คัน)', 
+                        data: Object.values(topDepts), 
+                        backgroundColor: '#1e3a8a' 
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        y: { beginAtZero: true } 
+                    },
+                    plugins: {
+                        legend: { display: false } // ปิด Legend ด้านบน เพราะแกน X บอกชื่ออยู่แล้ว
+                    }
+                }
             });
         }
 
+        // ฟังก์ชันอัปเดตตารางรถที่ใกล้หมดอายุ
         function updateExpiringTable(vehicles) {
             const tbody = document.getElementById('expiringTableBody');
             tbody.innerHTML = '';
             
+            // กรองเอาเฉพาะคันที่มีการตั้งวันที่ต่อภาษีไว้
             const sortedVehicles = vehicles
-                .filter(v => v.taxExpiry)
+                .filter(v => v.taxExpiry && v.taxExpiry !== "")
                 .sort((a, b) => new Date(a.taxExpiry) - new Date(b.taxExpiry))
-                .slice(0, 15);
+                .slice(0, 15); // แสดงมากสุด 15 คัน
 
             if(sortedVehicles.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">ไม่พบข้อมูลวันต่อทะเบียนในระบบ (กรุณาอัปเดตผ่านหน้า Admin)</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">ยังไม่พบข้อมูลการตั้งวันต่อทะเบียนในระบบ (สามารถไปเพิ่มได้ที่หน้าผู้ดูแลระบบ)</td></tr>';
                 return;
             }
 
@@ -166,13 +221,16 @@
                 const tr = document.createElement('tr');
                 tr.className = "border-b hover:bg-gray-50";
                 
-                const imgCell = v.imageUrl ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md shadow">` : '<div class="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-400">ไม่มีรูป</div>';
+                const imgCell = v.imageUrl 
+                    ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md shadow">` 
+                    : '<div class="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-400">ไม่มีรูป</div>';
                 
                 const expiryDate = new Date(v.taxExpiry);
                 const today = new Date();
                 const diffTime = expiryDate - today;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 
+                // แจ้งเตือนสีแดง(หมดอายุ) หรือ สีส้ม(ใกล้หมดอายุ)
                 let dateColor = "text-gray-800";
                 if(diffDays < 0) dateColor = "text-red-600 font-bold bg-red-50 px-2 py-1 rounded";
                 else if (diffDays <= 30) dateColor = "text-orange-600 font-bold bg-orange-50 px-2 py-1 rounded";
