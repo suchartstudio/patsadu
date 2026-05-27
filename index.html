@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบรายงานสถานะยานพาหนะ - เทศบาลนครขอนแก่น</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 1.125rem; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <nav class="bg-[#1e3a8a] text-white shadow-md">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold">📊 ระบบรายงานสถานะยานพาหนะ เทศบาลนครขอนแก่น</h1>
+            <a href="admin.html" class="bg-white text-[#1e3a8a] px-4 py-2 rounded-md font-semibold hover:bg-gray-200 transition">หน้าผู้ดูแลระบบ</a>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-6 py-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="card border-l-4 border-blue-600">
+                <h3 class="text-gray-500 font-semibold mb-1">จำนวนรถทั้งหมด</h3>
+                <p class="text-4xl font-bold text-[#1e3a8a]" id="totalVehicles">0</p>
+                <p class="text-sm text-gray-400 mt-2">คัน</p>
+            </div>
+            <div class="card border-l-4 border-green-500">
+                <h3 class="text-gray-500 font-semibold mb-1">ประเภทรถที่มีมากที่สุด</h3>
+                <p class="text-3xl font-bold text-green-700" id="topType">-</p>
+            </div>
+            <div class="card border-l-4 border-orange-500">
+                <h3 class="text-gray-500 font-semibold mb-1">หน่วยงานที่ดูแลมากที่สุด</h3>
+                <p class="text-3xl font-bold text-orange-700" id="topDept">-</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4 text-[#1e3a8a]">สัดส่วนประเภทรถ</h3>
+                <canvas id="typeChart"></canvas>
+            </div>
+            <div class="card">
+                <h3 class="text-xl font-semibold mb-4 text-[#1e3a8a]">จำนวนรถแบ่งตามหน่วยงาน</h3>
+                <canvas id="deptChart"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="text-2xl font-semibold mb-4 text-red-600">⚠️ รายการยานพาหนะที่ใกล้ครบกำหนดต่อทะเบียน</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-700">
+                            <th class="p-4 rounded-tl-lg">รูปภาพ</th>
+                            <th class="p-4">ทะเบียนรถ</th>
+                            <th class="p-4">ชื่อสินทรัพย์ / ชนิดรถ</th>
+                            <th class="p-4">หน่วยงาน</th>
+                            <th class="p-4">ผู้รับผิดชอบ</th>
+                            <th class="p-4 rounded-tr-lg">วันครบกำหนด</th>
+                        </tr>
+                    </thead>
+                    <tbody id="expiringTableBody">
+                        <tr><td colspan="6" class="p-4 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
+            authDomain: "suchartstudio-9a78d.firebaseapp.com",
+            databaseURL: "https://suchartstudio-9a78d-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "suchartstudio-9a78d",
+            storageBucket: "suchartstudio-9a78d.firebasestorage.app",
+            messagingSenderId: "953369646185",
+            appId: "1:953369646185:web:9f2a9f8b7faf596a6ebef8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        let typeChartInstance = null;
+        let deptChartInstance = null;
+
+        onValue(ref(db, 'vehicles'), (snapshot) => {
+            const data = snapshot.val();
+            if (!data) {
+                document.getElementById('expiringTableBody').innerHTML = '<tr><td colspan="6" class="p-4 text-center">ไม่มีข้อมูล</td></tr>';
+                return;
+            }
+
+            const vehicles = Object.values(data);
+            
+            // 1. Update Cards
+            document.getElementById('totalVehicles').innerText = vehicles.length;
+            
+            const typesCount = {};
+            const deptsCount = {};
+            
+            vehicles.forEach(v => {
+                typesCount[v.subType] = (typesCount[v.subType] || 0) + 1;
+                deptsCount[v.department] = (deptsCount[v.department] || 0) + 1;
+            });
+
+            document.getElementById('topType').innerText = Object.keys(typesCount).sort((a,b) => typesCount[b]-typesCount[a])[0] || '-';
+            document.getElementById('topDept').innerText = Object.keys(deptsCount).sort((a,b) => deptsCount[b]-deptsCount[a])[0] || '-';
+
+            // 2. Update Charts
+            updateCharts(typesCount, deptsCount);
+
+            // 3. Update Expiring Table
+            updateExpiringTable(vehicles);
+        });
+
+        function updateCharts(typesCount, deptsCount) {
+            if(typeChartInstance) typeChartInstance.destroy();
+            if(deptChartInstance) deptChartInstance.destroy();
+
+            const typeCtx = document.getElementById('typeChart').getContext('2d');
+            typeChartInstance = new Chart(typeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(typesCount),
+                    datasets: [{ data: Object.values(typesCount), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const deptCtx = document.getElementById('deptChart').getContext('2d');
+            deptChartInstance = new Chart(deptCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(deptsCount),
+                    datasets: [{ label: 'จำนวน (คัน)', data: Object.values(deptsCount), backgroundColor: '#1e3a8a' }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        function updateExpiringTable(vehicles) {
+            const tbody = document.getElementById('expiringTableBody');
+            tbody.innerHTML = '';
+            
+            // Sort by nearest expiry date
+            const sortedVehicles = vehicles
+                .filter(v => v.taxExpiry)
+                .sort((a, b) => new Date(a.taxExpiry) - new Date(b.taxExpiry))
+                .slice(0, 10); // Show top 10 nearest
+
+            sortedVehicles.forEach(v => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-gray-50";
+                
+                const imgCell = v.imageUrl ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md shadow">` : '<div class="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs">ไม่มีรูป</div>';
+                
+                // Highlight red if passed or close (within 30 days)
+                const expiryDate = new Date(v.taxExpiry);
+                const today = new Date();
+                const diffTime = expiryDate - today;
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                let dateColor = "text-gray-800";
+                if(diffDays < 0) dateColor = "text-red-600 font-bold";
+                else if (diffDays <= 30) dateColor = "text-orange-500 font-bold";
+
+                tr.innerHTML = `
+                    <td class="p-4">${imgCell}</td>
+                    <td class="p-4 font-bold text-lg">${v.licensePlate || '-'}</td>
+                    <td class="p-4">
+                        <div class="font-semibold text-[#1e3a8a]">${v.assetName || '-'}</div>
+                        <div class="text-sm text-gray-500">${v.subType || '-'}</div>
+                    </td>
+                    <td class="p-4">${v.department || '-'}</td>
+                    <td class="p-4">${v.responsiblePerson || '-'}</td>
+                    <td class="p-4 ${dateColor}">${v.taxExpiry || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+</html>
