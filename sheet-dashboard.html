@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
     <style>
@@ -89,9 +90,12 @@
             cards.innerHTML = `<div class="bg-green-700 text-white p-6 rounded-xl">ยอดรวมงบประมาณที่กรอง: <b>฿ ${total.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></div>`;
         }
 
-        function drawProjectChart() {
+       function drawProjectChart() {
             const ctx = document.getElementById('mainChart').getContext('2d');
             if(mainChart) mainChart.destroy();
+            
+            // ลงทะเบียน Plugin
+            Chart.register(ChartDataLabels);
             
             const cutoffDate = new Date(`${new Date().getFullYear()-1}-10-01`);
             
@@ -99,15 +103,8 @@
             const chartData = allData.filter(r => {
                 const dateVal = new Date(r["วันที่"] || '2026-01-01');
                 const isAfterOct = dateVal >= cutoffDate;
-                
-                // ตรวจสอบชื่อชุมชนและหน่วยงาน ต้องไม่มีคำว่า "เทศบาล"
-                const comm = r["ชุมชน"] || "";
-                const dept = r["หน่วยงาน"] || "";
-                const isNotMunicipality = !comm.includes("เทศบาล") && !dept.includes("เทศบาล");
-                
-                // ตรวจสอบว่าต้องมีชื่อชุมชนเท่านั้น (ถ้าชื่อชุมชนว่างเปล่าให้ข้ามไป)
-                const hasCommunity = comm.trim() !== "";
-                
+                const isNotMunicipality = !r["หน่วยงาน"]?.includes("เทศบาล") && !r["ชื่อโครงการ"]?.includes("เทศบาล");
+                const hasCommunity = (r["ชุมชน"] || "").trim() !== "";
                 return isAfterOct && isNotMunicipality && hasCommunity;
             });
 
@@ -117,13 +114,18 @@
                 counts[cat] = (counts[cat] || 0) + 1;
             });
 
+            // --- ระบบเรียงจากมากไปน้อย ---
+            let sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+            let labels = sortedEntries.map(x => x[0]);
+            let data = sortedEntries.map(x => x[1]);
+
             mainChart = new Chart(ctx, {
                 type: 'bar',
                 data: { 
-                    labels: Object.keys(counts), 
+                    labels: labels, 
                     datasets: [{ 
-                        label: 'จำนวนโครงการ (รายชุมชน)', 
-                        data: Object.values(counts), 
+                        label: 'จำนวนโครงการ', 
+                        data: data, 
                         backgroundColor: '#16a34a' 
                     }] 
                 },
@@ -131,7 +133,14 @@
                     responsive: true, 
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { display: false },
+                        // ตั้งค่าแสดงตัวเลขบนหัวกราฟ
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#166534',
+                            font: { weight: 'bold', size: 14 }
+                        }
                     },
                     scales: {
                         y: { beginAtZero: true, ticks: { precision: 0 } }
