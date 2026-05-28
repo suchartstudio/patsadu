@@ -17,33 +17,27 @@
 <body class="text-slate-800">
 
     <nav class="bg-[#166534] text-white shadow-md">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 class="text-2xl font-bold">📈 ระบบฐานข้อมูลอัจฉริยะ (Google Sheets)</h1>
+        <div class="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <h1 class="text-2xl font-bold">📈 ระบบฐานข้อมูลโครงการ (Google Sheets)</h1>
             <a href="index.html" class="bg-green-800 border border-green-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-green-700 transition shadow-sm">🏠 กลับหน้าหลัก</a>
         </div>
     </nav>
 
     <main class="container mx-auto px-6 py-8 max-w-7xl">
-        <div id="loading" class="text-center py-20 text-gray-500 text-xl animate-pulse">⏳ กำลังประมวลผลข้อมูล...</div>
+        <div id="loading" class="text-center py-20 text-gray-500 text-xl animate-pulse">⏳ กำลังโหลดข้อมูล...</div>
 
         <div id="dashboardContent" class="hidden">
-            <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8"></div>
+            <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปข้อมูลวงเงินงบประมาณ</h2>
+            <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8"></div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div class="card">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-700" id="chartTitle">จำนวนโครงการ (หลัง ต.ค. ปีปัจจุบัน)</h3>
-                    <div class="relative w-full h-64"><canvas id="mainChart"></canvas></div>
-                </div>
-                <div class="card">
-                    <h3 class="text-lg font-semibold mb-4 text-gray-700">ยอดรวมงบประมาณย้อนหลังรายปี (บาท)</h3>
-                    <div class="relative w-full h-64"><canvas id="yearChart"></canvas></div>
-                </div>
+            <div class="card mb-8">
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" id="chartTitle">แนวโน้มงบประมาณรายปี (ปีที่ผ่านมา)</h3>
+                <div class="relative w-full h-64 md:h-80"><canvas id="mainChart"></canvas></div>
             </div>
 
             <div class="bg-white rounded-xl shadow-md border-t-4 border-green-600 overflow-hidden">
                 <div class="bg-gray-50 p-6 border-b border-gray-200">
-                    <h2 class="text-lg font-bold text-green-800 mb-2">รายการโครงการ (หลัง ต.ค. ปีปัจจุบัน)</h2>
-                    <input type="text" id="searchInput" placeholder="ค้นหาข้อมูล..." class="w-full md:w-1/3 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-600 outline-none">
+                    <input type="text" id="searchInput" placeholder="🔍 ค้นหาข้อมูล..." class="w-full md:w-1/3 p-3 border rounded-lg shadow-sm">
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[800px]">
@@ -51,23 +45,38 @@
                         <tbody id="tableBody"></tbody>
                     </table>
                 </div>
+                <div class="bg-gray-50 p-4 border-t flex justify-between items-center">
+                    <div id="pageInfo" class="text-gray-600"></div>
+                    <div class="flex gap-2">
+                        <button id="prevBtn" class="px-4 py-2 bg-white border rounded">◀</button>
+                        <button id="nextBtn" class="px-4 py-2 bg-green-700 text-white rounded">▶</button>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
-    <script>
-        const SHEET_ID = "1B2-0bB79ftvpEcWTq5wITVb9XlVdZ2g1c1-1ruD_2Bg";
-        const SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+    <div id="sheetModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8 overflow-y-auto max-h-[90vh]" id="modalBody"></div>
+    </div>
 
+    <script>
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1B2-0bB79ftvpEcWTq5wITVb9XlVdZ2g1c1-1ruD_2Bg/export?format=csv";
         let allData = [], filteredData = [], headers = [];
         const displayHeaders = ["ปีงบ", "ชื่อโครงการ", "ชุมชน", "วงเงิน"]; 
-        let currentYear = new Date().getFullYear() + 543; // แปลง พ.ศ.
+        let currentPage = 1; const itemsPerPage = 30;
 
         Papa.parse(SHEET_CSV_URL, {
             download: true, header: true, skipEmptyLines: true,
             complete: function(results) {
-                allData = results.data.filter(row => Object.values(row).some(val => val !== ""));
+                allData = results.data.filter(r => Object.values(r).some(v => v));
                 headers = Object.keys(allData[0]);
+                
+                const lastYear = new Date().getFullYear() - 1;
+                const filterDate = new Date(`${lastYear}-10-01`);
+                const dateCol = headers.find(h => h.includes("วันที่")) || "ปีงบ";
+
+                filteredData = allData.filter(r => new Date(r[dateCol]) >= filterDate || parseInt(r[dateCol]) >= lastYear);
                 initDashboard();
             }
         });
@@ -75,56 +84,35 @@
         function initDashboard() {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
-
-            // กรองข้อมูล: หลัง ต.ค. ของปีปัจจุบัน
-            filteredData = allData.filter(row => {
-                let year = parseInt(row["ปีงบ"]);
-                return year === currentYear; // ปรับเงื่อนไขนี้ตามรูปแบบวันที่ในชีทของคุณ
-            });
-
-            updateSummaryCards(allData);
-            drawMainChart();
-            drawYearChart(allData);
+            updateSummaryCards(filteredData);
+            drawYearlyChart();
             renderTableHeader();
             renderTable();
         }
 
         function updateSummaryCards(dataList) {
-            let total = dataList.reduce((sum, row) => sum + parseFloat((row["วงเงิน"]||'0').replace(/,/g,'')), 0);
-            document.getElementById('summaryCards').innerHTML = `
-                <div class="col-span-2 md:col-span-5 bg-green-700 text-white p-6 rounded-xl shadow">
-                    <h3 class="text-green-100 text-sm">ยอดรวมงบประมาณทั้งหมด</h3>
-                    <p class="text-4xl font-bold">฿ ${total.toLocaleString()}</p>
-                </div>
-            `;
-        }
-
-        function drawYearChart(data) {
-            let yearData = {};
-            data.forEach(row => {
-                let y = row["ปีงบ"] || 'ไม่ระบุ';
-                yearData[y] = (yearData[y] || 0) + parseFloat((row["วงเงิน"]||'0').replace(/,/g,''));
+            let total = 0, deptBudget = {};
+            dataList.forEach(r => {
+                let amt = parseFloat(String(r["วงเงิน"]||0).replace(/,/g, ''));
+                total += amt || 0;
+                let dept = r["หน่วยงาน"] || "ไม่ระบุ";
+                deptBudget[dept] = (deptBudget[dept] || 0) + (amt || 0);
             });
-
-            new Chart(document.getElementById('yearChart').getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels: Object.keys(yearData).sort(),
-                    datasets: [{ label: 'งบประมาณรายปี', data: Object.values(yearData), borderColor: '#166534', tension: 0.3 }]
-                }
+            const cards = document.getElementById('summaryCards');
+            cards.innerHTML = `<div class="col-span-full bg-green-700 text-white p-6 rounded-xl">ยอดรวม: ฿${total.toLocaleString()}</div>`;
+            Object.entries(deptBudget).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(i => {
+                cards.innerHTML += `<div class="bg-white p-4 rounded shadow border-l-4 border-green-500">${i[0]}<br><b>฿${i[1].toLocaleString()}</b></div>`;
             });
         }
 
-        function drawMainChart() {
-            let counts = {};
-            filteredData.forEach(item => {
-                let val = item["ชุมชน"] || 'ไม่ระบุ';
-                counts[val] = (counts[val] || 0) + 1;
+        function drawYearlyChart() {
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            let yearly = {};
+            allData.forEach(r => {
+                let y = parseInt(r["ปีงบ"]);
+                if(y && y < new Date().getFullYear()) yearly[y] = (yearly[y] || 0) + (parseFloat(r["วงเงิน"]?.replace(/,/g,''))||0);
             });
-            new Chart(document.getElementById('mainChart').getContext('2d'), {
-                type: 'bar',
-                data: { labels: Object.keys(counts), datasets: [{ label: 'จำนวนโครงการ', data: Object.values(counts), backgroundColor: '#22c55e' }] }
-            });
+            new Chart(ctx, { type: 'line', data: { labels: Object.keys(yearly), datasets: [{ label: 'งบรายปี', data: Object.values(yearly), borderColor: '#166534' }] }});
         }
 
         function renderTableHeader() {
@@ -132,21 +120,25 @@
         }
 
         function renderTable() {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = filteredData.map(row => `
-                <tr class="border-b hover:bg-green-50 cursor-pointer" onclick="window.showModal(${JSON.stringify(row).replace(/"/g, '&quot;')})">
-                    ${displayHeaders.map(h => `<td class="p-4">${row[h] || '-'}</td>`).join('')}
-                </tr>
-            `).join('');
+            const body = document.getElementById('tableBody'); body.innerHTML = '';
+            filteredData.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).forEach(row => {
+                let tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-green-50 cursor-pointer";
+                tr.onclick = () => showModal(row);
+                tr.innerHTML = displayHeaders.map(h => `<td class="p-4">${row[h]||'-'}</td>`).join('');
+                body.appendChild(tr);
+            });
         }
 
-        window.showModal = (row) => {
-            let html = `<div class="grid grid-cols-1 gap-4">` + Object.entries(row).map(([k,v]) => `<div class="p-3 bg-gray-50 rounded"><strong>${k}:</strong> ${v}</div>`).join('') + `</div>`;
-            document.getElementById('modalBody').innerHTML = html;
+        function showModal(row) {
+            document.getElementById('modalBody').innerHTML = Object.entries(row).map(([k,v]) => `<div class="mb-2"><b>${k}:</b> ${v}</div>`).join('');
             document.getElementById('sheetModal').classList.remove('hidden');
-        };
-
-        window.closeModal = () => document.getElementById('sheetModal').classList.add('hidden');
+        }
+        function closeModal() { document.getElementById('sheetModal').classList.add('hidden'); }
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            filteredData = allData.filter(r => Object.values(r).some(v => v?.toLowerCase().includes(e.target.value.toLowerCase())));
+            renderTable();
+        });
     </script>
 </body>
 </html>
