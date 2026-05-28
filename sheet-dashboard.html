@@ -18,29 +18,28 @@
 
     <nav class="bg-[#166534] text-white shadow-md">
         <div class="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <h1 class="text-2xl font-bold">📈 ระบบฐานข้อมูลโครงการ (Google Sheets)</h1>
-            <a href="index.html" class="bg-green-800 border border-green-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-green-700 transition shadow-sm">🏠 กลับหน้าหลัก</a>
+            <h1 class="text-2xl font-bold">📈 ระบบฐานข้อมูลโครงการ</h1>
+            <a href="index.html" class="bg-green-800 border border-green-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-green-700 transition">🏠 กลับหน้าหลัก</a>
         </div>
     </nav>
 
     <main class="container mx-auto px-6 py-8 max-w-7xl">
-        <div id="loading" class="text-center py-20 text-gray-500 text-xl animate-pulse">⏳ กำลังโหลดข้อมูล...</div>
+        <div id="loading" class="text-center py-20 text-gray-500 text-xl animate-pulse">⏳ กำลังประมวลผลข้อมูล...</div>
 
         <div id="dashboardContent" class="hidden">
             <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปข้อมูล (อัปเดตตามตัวกรอง)</h2>
-            <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8"></div>
+            <div id="summaryCards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"></div>
 
             <div class="card mb-8">
-                <h3 class="text-lg font-semibold mb-4 text-gray-700" id="chartTitle">จำนวนโครงการ (หลัง ต.ค. 2568 - ไม่รวมหน่วยงานเทศบาล)</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" id="chartTitle">จำนวนโครงการ (หลัง ต.ค. ปีก่อน - ไม่รวมเทศบาล)</h3>
                 <div class="relative w-full h-64 md:h-80"><canvas id="mainChart"></canvas></div>
             </div>
 
             <div class="bg-white rounded-xl shadow-md border-t-4 border-green-600 overflow-hidden">
                 <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-wrap gap-4">
                     <input type="text" id="searchInput" placeholder="🔍 ค้นหา..." class="w-full md:w-1/4 p-3 border rounded-lg shadow-sm">
-                    <select id="communityFilter" class="p-3 border rounded-lg bg-white w-full md:w-1/4">
-                        <option value="">-- ทุกชุมชน --</option>
-                    </select>
+                    <select id="yearFilter" class="p-3 border rounded-lg bg-white w-full md:w-1/5"><option value="">-- ทุกปีงบ --</option></select>
+                    <select id="communityFilter" class="p-3 border rounded-lg bg-white w-full md:w-1/5"><option value="">-- ทุกชุมชน --</option></select>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[800px]">
@@ -56,23 +55,24 @@
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1B2-0bB79ftvpEcWTq5wITVb9XlVdZ2g1c1-1ruD_2Bg/export?format=csv";
         let allData = [], filteredData = [], headers = [];
         const displayHeaders = ["ปีงบ", "ชื่อโครงการ", "ชุมชน", "วงเงิน"]; 
+        let mainChart = null;
 
         Papa.parse(SHEET_CSV_URL, {
             download: true, header: true, skipEmptyLines: true,
             complete: function(results) {
                 allData = results.data.filter(r => Object.values(r).some(v => v));
                 headers = Object.keys(allData[0]);
-                filteredData = [...allData];
-                
                 populateFilters();
+                applyFilters(); // กรองตั้งแต่โหลดเสร็จ
                 initDashboard();
             }
         });
 
         function populateFilters() {
+            const years = new Set(allData.map(r => r["ปีงบ"]).filter(v => v));
             const comms = new Set(allData.map(r => r["ชุมชน"]).filter(v => v));
-            const select = document.getElementById('communityFilter');
-            comms.forEach(c => select.innerHTML += `<option value="${c}">${c}</option>`);
+            years.forEach(y => document.getElementById('yearFilter').innerHTML += `<option value="${y}">${y}</option>`);
+            comms.forEach(c => document.getElementById('communityFilter').innerHTML += `<option value="${c}">${c}</option>`);
         }
 
         function initDashboard() {
@@ -83,22 +83,23 @@
             drawProjectChart();
         }
 
-        // 1. ยอดสรุปแบบ Real-time
         function updateSummaryCards(dataList) {
             let total = dataList.reduce((sum, r) => sum + (parseFloat(String(r["วงเงิน"]||0).replace(/,/g, ''))||0), 0);
             const cards = document.getElementById('summaryCards');
-            cards.innerHTML = `<div class="col-span-full bg-green-700 text-white p-6 rounded-xl">ยอดรวมงบประมาณตามตัวกรอง: <b>฿ ${total.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></div>`;
+            cards.innerHTML = `<div class="bg-green-700 text-white p-6 rounded-xl">ยอดรวมงบประมาณที่กรอง: <b>฿ ${total.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></div>`;
         }
 
-        // 2. กราฟ (ตัดเทศบาล + หลัง ต.ค. 2568)
         function drawProjectChart() {
             const ctx = document.getElementById('mainChart').getContext('2d');
-            const cutoffDate = new Date('2025-10-01');
+            if(mainChart) mainChart.destroy();
             
-            // กรองข้อมูลเฉพาะกราฟ
+            const cutoffDate = new Date(`${new Date().getFullYear()-1}-10-01`);
+            
+            // กรองข้อมูล: หลัง ต.ค. ปีก่อน และไม่ใช่เทศบาล
             const chartData = allData.filter(r => {
-                const isAfterOct = new Date(r["วันที่"] || '2026-01-01') >= cutoffDate;
-                const isNotMunicipality = !r["หน่วยงาน"]?.includes("เทศบาล");
+                const dateVal = new Date(r["วันที่"] || '2026-01-01');
+                const isAfterOct = dateVal >= cutoffDate;
+                const isNotMunicipality = !r["หน่วยงาน"]?.includes("เทศบาล") && !r["ชื่อโครงการ"]?.includes("เทศบาล");
                 return isAfterOct && isNotMunicipality;
             });
 
@@ -108,7 +109,7 @@
                 counts[cat] = (counts[cat] || 0) + 1;
             });
 
-            new Chart(ctx, {
+            mainChart = new Chart(ctx, {
                 type: 'bar',
                 data: { labels: Object.keys(counts), datasets: [{ label: 'จำนวนโครงการ', data: Object.values(counts), backgroundColor: '#16a34a' }] },
                 options: { responsive: true, maintainAspectRatio: false }
@@ -125,22 +126,25 @@
             });
         }
 
-        // 3. ระบบกรองข้อมูล (รวมทุกเงื่อนไข)
         function applyFilters() {
             const kw = document.getElementById('searchInput').value.toLowerCase();
+            const year = document.getElementById('yearFilter').value;
             const comm = document.getElementById('communityFilter').value;
 
             filteredData = allData.filter(r => {
                 const matchKw = Object.values(r).some(v => v?.toLowerCase().includes(kw));
+                const matchYear = year === "" || r["ปีงบ"] == year;
                 const matchComm = comm === "" || r["ชุมชน"] === comm;
-                return matchKw && matchComm;
+                return matchKw && matchYear && matchComm;
             });
 
             renderTable();
-            updateSummaryCards(filteredData); // อัปเดตยอดเงินตามตัวกรอง
+            updateSummaryCards(filteredData);
+            // กราฟไม่จำเป็นต้องอัปเดตตามตัวกรองย่อย เพื่อให้เห็นภาพรวมโครงการทั้งหมดที่เข้าเงื่อนไขเวลา
         }
 
         document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('yearFilter').addEventListener('change', applyFilters);
         document.getElementById('communityFilter').addEventListener('change', applyFilters);
     </script>
 </body>
