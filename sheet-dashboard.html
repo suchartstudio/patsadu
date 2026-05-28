@@ -27,17 +27,20 @@
         <div id="loading" class="text-center py-20 text-gray-500 text-xl animate-pulse">⏳ กำลังโหลดข้อมูล...</div>
 
         <div id="dashboardContent" class="hidden">
-            <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปข้อมูลวงเงินงบประมาณ</h2>
+            <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปข้อมูล (อัปเดตตามตัวกรอง)</h2>
             <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8"></div>
 
             <div class="card mb-8">
-                <h3 class="text-lg font-semibold mb-4 text-gray-700" id="chartTitle">แนวโน้มงบประมาณรายปี (ปีที่ผ่านมา)</h3>
+                <h3 class="text-lg font-semibold mb-4 text-gray-700" id="chartTitle">จำนวนโครงการ (หลัง ต.ค. 2568 - ไม่รวมหน่วยงานเทศบาล)</h3>
                 <div class="relative w-full h-64 md:h-80"><canvas id="mainChart"></canvas></div>
             </div>
 
             <div class="bg-white rounded-xl shadow-md border-t-4 border-green-600 overflow-hidden">
-                <div class="bg-gray-50 p-6 border-b border-gray-200">
-                    <input type="text" id="searchInput" placeholder="🔍 ค้นหาข้อมูล..." class="w-full md:w-1/3 p-3 border rounded-lg shadow-sm">
+                <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-wrap gap-4">
+                    <input type="text" id="searchInput" placeholder="🔍 ค้นหา..." class="w-full md:w-1/4 p-3 border rounded-lg shadow-sm">
+                    <select id="communityFilter" class="p-3 border rounded-lg bg-white w-full md:w-1/4">
+                        <option value="">-- ทุกชุมชน --</option>
+                    </select>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[800px]">
@@ -45,100 +48,100 @@
                         <tbody id="tableBody"></tbody>
                     </table>
                 </div>
-                <div class="bg-gray-50 p-4 border-t flex justify-between items-center">
-                    <div id="pageInfo" class="text-gray-600"></div>
-                    <div class="flex gap-2">
-                        <button id="prevBtn" class="px-4 py-2 bg-white border rounded">◀</button>
-                        <button id="nextBtn" class="px-4 py-2 bg-green-700 text-white rounded">▶</button>
-                    </div>
-                </div>
             </div>
         </div>
     </main>
-
-    <div id="sheetModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8 overflow-y-auto max-h-[90vh]" id="modalBody"></div>
-    </div>
 
     <script>
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1B2-0bB79ftvpEcWTq5wITVb9XlVdZ2g1c1-1ruD_2Bg/export?format=csv";
         let allData = [], filteredData = [], headers = [];
         const displayHeaders = ["ปีงบ", "ชื่อโครงการ", "ชุมชน", "วงเงิน"]; 
-        let currentPage = 1; const itemsPerPage = 30;
 
         Papa.parse(SHEET_CSV_URL, {
             download: true, header: true, skipEmptyLines: true,
             complete: function(results) {
                 allData = results.data.filter(r => Object.values(r).some(v => v));
                 headers = Object.keys(allData[0]);
+                filteredData = [...allData];
                 
-                const lastYear = new Date().getFullYear() - 1;
-                const filterDate = new Date(`${lastYear}-10-01`);
-                const dateCol = headers.find(h => h.includes("วันที่")) || "ปีงบ";
-
-                filteredData = allData.filter(r => new Date(r[dateCol]) >= filterDate || parseInt(r[dateCol]) >= lastYear);
+                populateFilters();
                 initDashboard();
             }
         });
 
+        function populateFilters() {
+            const comms = new Set(allData.map(r => r["ชุมชน"]).filter(v => v));
+            const select = document.getElementById('communityFilter');
+            comms.forEach(c => select.innerHTML += `<option value="${c}">${c}</option>`);
+        }
+
         function initDashboard() {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
-            updateSummaryCards(filteredData);
-            drawYearlyChart();
-            renderTableHeader();
             renderTable();
+            updateSummaryCards(filteredData);
+            drawProjectChart();
         }
 
+        // 1. ยอดสรุปแบบ Real-time
         function updateSummaryCards(dataList) {
-            let total = 0, deptBudget = {};
-            dataList.forEach(r => {
-                let amt = parseFloat(String(r["วงเงิน"]||0).replace(/,/g, ''));
-                total += amt || 0;
-                let dept = r["หน่วยงาน"] || "ไม่ระบุ";
-                deptBudget[dept] = (deptBudget[dept] || 0) + (amt || 0);
-            });
+            let total = dataList.reduce((sum, r) => sum + (parseFloat(String(r["วงเงิน"]||0).replace(/,/g, ''))||0), 0);
             const cards = document.getElementById('summaryCards');
-            cards.innerHTML = `<div class="col-span-full bg-green-700 text-white p-6 rounded-xl">ยอดรวม: ฿${total.toLocaleString()}</div>`;
-            Object.entries(deptBudget).sort((a,b)=>b[1]-a[1]).slice(0,5).forEach(i => {
-                cards.innerHTML += `<div class="bg-white p-4 rounded shadow border-l-4 border-green-500">${i[0]}<br><b>฿${i[1].toLocaleString()}</b></div>`;
-            });
+            cards.innerHTML = `<div class="col-span-full bg-green-700 text-white p-6 rounded-xl">ยอดรวมงบประมาณตามตัวกรอง: <b>฿ ${total.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></div>`;
         }
 
-        function drawYearlyChart() {
+        // 2. กราฟ (ตัดเทศบาล + หลัง ต.ค. 2568)
+        function drawProjectChart() {
             const ctx = document.getElementById('mainChart').getContext('2d');
-            let yearly = {};
-            allData.forEach(r => {
-                let y = parseInt(r["ปีงบ"]);
-                if(y && y < new Date().getFullYear()) yearly[y] = (yearly[y] || 0) + (parseFloat(r["วงเงิน"]?.replace(/,/g,''))||0);
+            const cutoffDate = new Date('2025-10-01');
+            
+            // กรองข้อมูลเฉพาะกราฟ
+            const chartData = allData.filter(r => {
+                const isAfterOct = new Date(r["วันที่"] || '2026-01-01') >= cutoffDate;
+                const isNotMunicipality = !r["หน่วยงาน"]?.includes("เทศบาล");
+                return isAfterOct && isNotMunicipality;
             });
-            new Chart(ctx, { type: 'line', data: { labels: Object.keys(yearly), datasets: [{ label: 'งบรายปี', data: Object.values(yearly), borderColor: '#166534' }] }});
-        }
 
-        function renderTableHeader() {
-            document.getElementById('tableHeader').innerHTML = displayHeaders.map(h => `<th class="p-4">${h}</th>`).join('');
+            let counts = {};
+            chartData.forEach(r => {
+                let cat = r["ชุมชน"] || "ไม่ระบุ";
+                counts[cat] = (counts[cat] || 0) + 1;
+            });
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: { labels: Object.keys(counts), datasets: [{ label: 'จำนวนโครงการ', data: Object.values(counts), backgroundColor: '#16a34a' }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
         }
 
         function renderTable() {
             const body = document.getElementById('tableBody'); body.innerHTML = '';
-            filteredData.slice((currentPage-1)*itemsPerPage, currentPage*itemsPerPage).forEach(row => {
+            filteredData.forEach(row => {
                 let tr = document.createElement('tr');
-                tr.className = "border-b hover:bg-green-50 cursor-pointer";
-                tr.onclick = () => showModal(row);
+                tr.className = "border-b hover:bg-green-50";
                 tr.innerHTML = displayHeaders.map(h => `<td class="p-4">${row[h]||'-'}</td>`).join('');
                 body.appendChild(tr);
             });
         }
 
-        function showModal(row) {
-            document.getElementById('modalBody').innerHTML = Object.entries(row).map(([k,v]) => `<div class="mb-2"><b>${k}:</b> ${v}</div>`).join('');
-            document.getElementById('sheetModal').classList.remove('hidden');
-        }
-        function closeModal() { document.getElementById('sheetModal').classList.add('hidden'); }
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            filteredData = allData.filter(r => Object.values(r).some(v => v?.toLowerCase().includes(e.target.value.toLowerCase())));
+        // 3. ระบบกรองข้อมูล (รวมทุกเงื่อนไข)
+        function applyFilters() {
+            const kw = document.getElementById('searchInput').value.toLowerCase();
+            const comm = document.getElementById('communityFilter').value;
+
+            filteredData = allData.filter(r => {
+                const matchKw = Object.values(r).some(v => v?.toLowerCase().includes(kw));
+                const matchComm = comm === "" || r["ชุมชน"] === comm;
+                return matchKw && matchComm;
+            });
+
             renderTable();
-        });
+            updateSummaryCards(filteredData); // อัปเดตยอดเงินตามตัวกรอง
+        }
+
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('communityFilter').addEventListener('change', applyFilters);
     </script>
 </body>
 </html>
