@@ -90,74 +90,73 @@
             cards.innerHTML = `<div class="bg-green-700 text-white p-6 rounded-xl">ยอดรวมงบประมาณที่กรอง: <b>฿ ${total.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></div>`;
         }
 
-       function drawProjectChart() {
-            const ctx = document.getElementById('mainChart').getContext('2d');
-            if(mainChart) mainChart.destroy();
-            
-            // ลงทะเบียน Plugin
-            Chart.register(ChartDataLabels);
-            
-            const cutoffDate = new Date(`${new Date().getFullYear()-1}-10-01`);
-            
-            // กรองข้อมูล: หลัง ต.ค. ปีก่อน
-            const chartData = allData.filter(r => {
-                const dateVal = new Date(r["วันที่"] || '2026-01-01');
-                const isAfterOct = dateVal >= cutoffDate;
-                const isNotMunicipality = !r["หน่วยงาน"]?.includes("เทศบาล") && !r["ชื่อโครงการ"]?.includes("เทศบาล");
-                const hasCommunity = (r["ชุมชน"] || "").trim() !== "";
-                return isAfterOct && isNotMunicipality && hasCommunity;
-            });
+      function drawProjectChart() {
+    const ctx = document.getElementById('mainChart').getContext('2d');
+    if(mainChart) mainChart.destroy();
+    
+    // ลงทะเบียน Plugin สำหรับแสดงตัวเลข
+    Chart.register(ChartDataLabels);
+    
+    const cutoffDate = new Date(`${new Date().getFullYear()-1}-10-01`);
+    
+    // กรองข้อมูล: หลัง ต.ค. ปีก่อน
+    const chartData = allData.filter(r => {
+        const dateVal = new Date(r["วันที่"] || '2026-01-01');
+        const isAfterOct = dateVal >= cutoffDate;
+        
+        // --- ส่วนที่ปรับปรุง: ตัดคำว่า "เทศบาล" ออกทุกช่องทาง ---
+        const comm = r["ชุมชน"] || "";
+        const dept = r["หน่วยงาน"] || "";
+        const proj = r["ชื่อโครงการ"] || "";
+        
+        // ตรวจสอบว่ามีคำว่า "เทศบาล" อยู่ในข้อมูลเหล่านี้หรือไม่
+        const containsMunicipality = comm.includes("เทศบาล") || dept.includes("เทศบาล") || proj.includes("เทศบาล");
+        
+        // ต้องไม่ใช่เทศบาล และต้องมีชื่อชุมชนระบุไว้
+        const hasCommunity = comm.trim() !== "";
+        
+        return isAfterOct && !containsMunicipality && hasCommunity;
+    });
 
-            let counts = {};
-            chartData.forEach(r => {
-                let cat = r["ชุมชน"] || "ไม่ระบุ";
-                counts[cat] = (counts[cat] || 0) + 1;
-            });
+    let counts = {};
+    chartData.forEach(r => {
+        let cat = r["ชุมชน"]; 
+        counts[cat] = (counts[cat] || 0) + 1;
+    });
 
-            // --- ระบบเรียงจากมากไปน้อย ---
-            let sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-            let labels = sortedEntries.map(x => x[0]);
-            let data = sortedEntries.map(x => x[1]);
+    // เรียงลำดับจากมากไปน้อย
+    let sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    let labels = sortedEntries.map(x => x[0]);
+    let data = sortedEntries.map(x => x[1]);
 
-            mainChart = new Chart(ctx, {
-                type: 'bar',
-                data: { 
-                    labels: labels, 
-                    datasets: [{ 
-                        label: 'จำนวนโครงการ', 
-                        data: data, 
-                        backgroundColor: '#16a34a' 
-                    }] 
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        // ตั้งค่าแสดงตัวเลขบนหัวกราฟ
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'top',
-                            color: '#166534',
-                            font: { weight: 'bold', size: 14 }
-                        }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { precision: 0 } }
-                    }
+    mainChart = new Chart(ctx, {
+        type: 'bar',
+        data: { 
+            labels: labels, 
+            datasets: [{ 
+                label: 'จำนวนโครงการ', 
+                data: data, 
+                backgroundColor: '#16a34a' 
+            }] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    anchor: 'end',
+                    align: 'top',
+                    color: '#166534',
+                    font: { weight: 'bold', size: 14 }
                 }
-            });
+            },
+            scales: {
+                y: { beginAtZero: true, ticks: { precision: 0 } }
+            }
         }
-        function renderTable() {
-            const body = document.getElementById('tableBody'); body.innerHTML = '';
-            filteredData.forEach(row => {
-                let tr = document.createElement('tr');
-                tr.className = "border-b hover:bg-green-50";
-                tr.innerHTML = displayHeaders.map(h => `<td class="p-4">${row[h]||'-'}</td>`).join('');
-                body.appendChild(tr);
-            });
-        }
-
+    });
+}
         function applyFilters() {
             const kw = document.getElementById('searchInput').value.toLowerCase();
             const year = document.getElementById('yearFilter').value;
