@@ -95,12 +95,20 @@
             
             const cutoffDate = new Date(`${new Date().getFullYear()-1}-10-01`);
             
-            // กรองข้อมูล: หลัง ต.ค. ปีก่อน และไม่ใช่เทศบาล
+            // กรองข้อมูล: หลัง ต.ค. ปีก่อน
             const chartData = allData.filter(r => {
                 const dateVal = new Date(r["วันที่"] || '2026-01-01');
                 const isAfterOct = dateVal >= cutoffDate;
-                const isNotMunicipality = !r["หน่วยงาน"]?.includes("เทศบาล") && !r["ชื่อโครงการ"]?.includes("เทศบาล");
-                return isAfterOct && isNotMunicipality;
+                
+                // ตรวจสอบชื่อชุมชนและหน่วยงาน ต้องไม่มีคำว่า "เทศบาล"
+                const comm = r["ชุมชน"] || "";
+                const dept = r["หน่วยงาน"] || "";
+                const isNotMunicipality = !comm.includes("เทศบาล") && !dept.includes("เทศบาล");
+                
+                // ตรวจสอบว่าต้องมีชื่อชุมชนเท่านั้น (ถ้าชื่อชุมชนว่างเปล่าให้ข้ามไป)
+                const hasCommunity = comm.trim() !== "";
+                
+                return isAfterOct && isNotMunicipality && hasCommunity;
             });
 
             let counts = {};
@@ -111,11 +119,26 @@
 
             mainChart = new Chart(ctx, {
                 type: 'bar',
-                data: { labels: Object.keys(counts), datasets: [{ label: 'จำนวนโครงการ', data: Object.values(counts), backgroundColor: '#16a34a' }] },
-                options: { responsive: true, maintainAspectRatio: false }
+                data: { 
+                    labels: Object.keys(counts), 
+                    datasets: [{ 
+                        label: 'จำนวนโครงการ (รายชุมชน)', 
+                        data: Object.values(counts), 
+                        backgroundColor: '#16a34a' 
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
             });
         }
-
         function renderTable() {
             const body = document.getElementById('tableBody'); body.innerHTML = '';
             filteredData.forEach(row => {
