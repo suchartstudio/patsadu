@@ -19,7 +19,7 @@
             body { background-color: white !important; color: black !important; }
             #main-ui, nav, #assetModal, #adminPanel { display: none !important; }
             #printArea { display: block !important; }
-            * { filter: grayscale(100%) !important; } /* บังคับโทนขาวดำทั้งหมด */
+            * { filter: grayscale(100%) !important; }
             
             table.print-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 15px; }
             table.print-table th, table.print-table td { border: 1px solid #333 !important; padding: 6px 8px !important; text-align: left; }
@@ -31,12 +31,10 @@
 </head>
 <body class="text-slate-800">
 
-    <!-- พื้นที่สำหรับพิมพ์รายงาน (ซ่อนในโหมดปกติ) -->
+    <!-- พื้นที่สำหรับพิมพ์รายงาน -->
     <div id="printArea" class="hidden"></div>
 
-    <!-- พื้นที่ UI หลัก -->
     <div id="main-ui">
-        <!-- Navbar -->
         <nav class="bg-[#1e3a8a] text-white shadow-md">
             <div class="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
                 <h1 class="text-2xl font-bold">🏢 ระบบทะเบียนทรัพย์สิน เทศบาลนครขอนแก่น</h1>
@@ -46,7 +44,6 @@
 
         <main class="container mx-auto px-6 py-8 max-w-7xl">
             
-            <!-- สวิตช์สลับโหมด -->
             <div class="flex justify-end mb-6">
                 <button id="toggleAdminBtn" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition shadow-sm border border-gray-300 flex items-center gap-2">
                     🔒 เปิดโหมดผู้ดูแลระบบ
@@ -105,7 +102,6 @@
                 </div>
             </div>
 
-            <!-- ป้ายแยกหมวดหมู่และหน่วยงาน (Interactive) -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100 flex flex-col h-full">
                     <h4 class="text-sm font-bold text-gray-500 mb-3 border-b pb-2 flex justify-between items-center">
@@ -124,19 +120,22 @@
             <div class="bg-white rounded-xl shadow-md border-t-4 border-[#1e3a8a] overflow-hidden" id="tableSection">
                 <!-- ตัวกรอง และปุ่ม Print -->
                 <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-wrap gap-4 items-center justify-between">
-                    <div class="flex flex-wrap gap-4 w-full xl:w-auto flex-1">
+                    <div class="flex flex-wrap gap-3 w-full xl:w-auto flex-1 items-center">
                         <input type="text" id="searchInput" placeholder="🔍 ค้นหา รหัส / ชื่อ..." class="w-full md:w-1/4 p-2.5 border rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-none shadow-sm text-sm">
                         <select id="catFilter" class="w-full md:w-1/4 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกประเภท --</option></select>
                         <select id="deptFilter" class="w-full md:w-1/4 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกหน่วยงาน --</option></select>
-                        <button onclick="clearFilters()" class="text-gray-500 hover:text-red-500 text-sm font-semibold underline decoration-dotted px-2">ล้างตัวกรอง</button>
+                        
+                        <!-- ปรับปรุงปุ่มล้างตัวกรองให้เด่นชัดขึ้น -->
+                        <button onclick="clearFilters()" class="bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm transition flex items-center gap-1">
+                            ❌ ล้างตัวกรอง
+                        </button>
                     </div>
                     <!-- ปุ่มพิมพ์รายงาน -->
-                    <button onclick="printReport()" class="w-full xl:w-auto bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 px-6 rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
-                        🖨️ พิมพ์รายงานตารางนี้
+                    <button onclick="printReport()" class="w-full xl:w-auto mt-4 xl:mt-0 bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 px-6 rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
+                        🖨️ พิมพ์รายงาน
                     </button>
                 </div>
                 
-                <!-- ตาราง -->
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse min-w-[1000px]">
                         <thead>
@@ -155,7 +154,6 @@
                     </table>
                 </div>
 
-                <!-- เปลี่ยนหน้า -->
                 <div class="bg-gray-50 p-4 border-t flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="text-gray-600 font-medium" id="pageInfo">แสดงรายการที่ 0 ถึง 0</div>
                     <div class="flex gap-2">
@@ -242,7 +240,6 @@
             updateSummaryCards(filteredAssets);
         };
 
-        // ฟังก์ชันล้างตัวกรอง
         window.clearFilters = () => {
             document.getElementById('searchInput').value = '';
             document.getElementById('catFilter').value = '';
@@ -250,16 +247,11 @@
             applyFilters();
         };
 
-        // ฟังก์ชันรับการคลิกจากป้าย (Interactive Badge)
         window.setFilterFromBadge = (type, value) => {
-            if (value === 'ไม่ระบุประเภท' || value === 'ไม่ระบุหน่วยงาน') return; // ข้ามการกรองถ้าไม่ระบุ
-            
+            if (value === 'ไม่ระบุประเภท' || value === 'ไม่ระบุหน่วยงาน') return; 
             if (type === 'cat') document.getElementById('catFilter').value = value;
             if (type === 'dept') document.getElementById('deptFilter').value = value;
-            
             applyFilters();
-            
-            // เลื่อนหน้าจอลงมาที่ตารางเบาๆ
             document.getElementById('tableSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
 
@@ -287,7 +279,6 @@
             document.getElementById('sumTopCat').innerText = topCat && topCat[0] !== 'ไม่ระบุประเภท' ? topCat[0] : '-';
             document.getElementById('sumTopCatCount').innerText = `${topCat ? topCat[1].toLocaleString() : 0} รายการ`;
 
-            // สร้างป้ายที่สามารถกดได้ (onclick)
             const catHtml = sortedCats.map(c => `
                 <div onclick="setFilterFromBadge('cat', '${c[0]}')" class="${c[0] !== 'ไม่ระบุประเภท' ? 'cursor-pointer hover:bg-blue-100 hover:border-blue-300' : ''} transition bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
                     <span class="font-medium truncate max-w-[150px]" title="${c[0]}">${c[0]}</span>
@@ -374,7 +365,7 @@
             document.getElementById('assetModal').classList.remove('hidden');
         };
 
-        // ระบบพิมพ์รายงานขาว-ดำ A4
+        // ระบบพิมพ์รายงานที่ปรับให้แสดง "ชื่อตัวกรอง"
         window.printReport = () => {
             if (filteredAssets.length === 0) {
                 Swal.fire('ไม่มีข้อมูล', 'โปรดเลือกข้อมูลเพื่อพิมพ์รายงาน', 'warning');
@@ -384,14 +375,28 @@
             const printArea = document.getElementById('printArea');
             const totalValue = filteredAssets.reduce((sum, a) => sum + (parseFloat(a.price) || 0), 0);
             
+            // ดึงข้อความจากตัวกรองปัจจุบันมาเพื่อแสดงในหัวกระดาษ
+            const searchKw = document.getElementById('searchInput').value.trim();
+            const cat = document.getElementById('catFilter').value;
+            const dept = document.getElementById('deptFilter').value;
+            
+            let filterTexts = [];
+            if (searchKw) filterTexts.push(`ค้นหา: "${searchKw}"`);
+            if (cat) filterTexts.push(`ประเภท: ${cat}`);
+            if (dept) filterTexts.push(`หน่วยงาน: ${dept}`);
+            
+            const filterDisplay = filterTexts.length > 0 
+                ? `<b>เงื่อนไขที่เลือก:</b> ${filterTexts.join(' | ')}` 
+                : `<b>เงื่อนไขที่เลือก:</b> ข้อมูลทั้งหมด (ไม่มีการกรอง)`;
+
             let html = `
                 <div style="text-align: center; margin-bottom: 20px;">
                     <h2 style="font-size: 16pt; font-weight: bold; margin-bottom: 5px;">รายงานทะเบียนทรัพย์สิน</h2>
                     <h3 style="font-size: 14pt; margin-bottom: 10px;">เทศบาลนครขอนแก่น</h3>
-                    <p style="font-size: 11pt; border-bottom: 1px solid #000; padding-bottom: 10px; display: inline-block;">
-                        ข้อมูลตามตัวกรอง จำนวน ${filteredAssets.length.toLocaleString()} รายการ | 
-                        มูลค่ารวม ฿ ${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}
-                    </p>
+                    <div style="font-size: 11pt; border-bottom: 1px dashed #666; padding-bottom: 10px; margin: 0 auto 15px auto; max-width: 90%; line-height: 1.6;">
+                        <p style="margin: 0; color: #333;">${filterDisplay}</p>
+                        <p style="margin: 0; margin-top: 4px;">สรุปจำนวน <b>${filteredAssets.length.toLocaleString()}</b> รายการ | มูลค่ารวม <b>฿ ${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</b></p>
+                    </div>
                 </div>
                 <table class="print-table">
                     <thead>
@@ -435,7 +440,7 @@
             window.print();
         };
 
-        // สคริปต์การนำเข้า CSV และบันทึก/แก้ไข/ลบ เหมือนเดิมทั้งหมด
+        // สคริปต์การนำเข้า CSV และบันทึก/แก้ไข/ลบ
         document.getElementById('csvFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
