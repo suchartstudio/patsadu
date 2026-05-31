@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบทะเบียนทรัพย์สิน - เทศบาลนครขอนแก่น</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏢</text></svg>">
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 1.125rem; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <nav class="bg-[#1e3a8a] text-white shadow-md">
+        <div class="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <h1 class="text-2xl font-bold">🏢 ระบบทะเบียนทรัพย์สิน เทศบาลนครขอนแก่น</h1>
+            <a href="index.html" class="bg-blue-900 border border-blue-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-800 transition shadow-sm">🏠 กลับหน้าหลัก</a>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-6 py-8 max-w-7xl">
+        
+        <div class="flex justify-end mb-6">
+            <button id="toggleAdminBtn" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition shadow-sm border border-gray-300 flex items-center gap-2">
+                🔒 เปิดโหมดผู้ดูแลระบบ
+            </button>
+        </div>
+
+        <div id="adminPanel" class="hidden mb-10 space-y-6">
+            
+            <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-orange-500">
+                <h3 class="text-xl font-bold mb-2 text-orange-700">📥 นำเข้าข้อมูลทะเบียนทรัพย์สิน (จากระบบ e-LAAS / Excel)</h3>
+                <p class="text-sm text-gray-600 mb-4 bg-orange-50 p-3 rounded-lg border border-orange-100">
+                    <b>คำแนะนำ:</b> ให้เปิดไฟล์ Excel (.xlsx) ของท่าน แล้วเลือก <b>Save As -> "CSV UTF-8 (Comma delimited)"</b> ก่อนนำเข้า<br>
+                    * ระบบถูกออกแบบมาให้ข้ามหัวตารางขยะ 13 บรรทัดแรกให้อัตโนมัติ ไม่ต้องลบเอง
+                </p>
+                <div class="flex flex-col md:flex-row gap-4 items-center">
+                    <input type="file" id="csvFileInput" accept=".csv" class="w-full md:w-1/2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100 cursor-pointer">
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-600">
+                <h3 class="text-xl font-bold mb-6 text-[#1e3a8a]" id="formTitle">➕ เพิ่มรายการทรัพย์สินใหม่ (Manual)</h3>
+                <form id="assetForm" class="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <input type="hidden" id="editId">
+                    
+                    <div class="col-span-1 md:col-span-2"><label class="block font-semibold mb-1 text-sm text-gray-600">รหัสสินทรัพย์ *</label>
+                    <input type="text" id="f_id" required class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    
+                    <div class="col-span-1 md:col-span-2"><label class="block font-semibold mb-1 text-sm text-gray-600">ชื่อสินทรัพย์ *</label>
+                    <input type="text" id="f_name" required class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">ประเภท</label>
+                    <input type="text" id="f_category" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">ชนิด</label>
+                    <input type="text" id="f_type" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">ราคาสินทรัพย์</label>
+                    <input type="number" id="f_price" step="0.01" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">วันที่ได้มา</label>
+                    <input type="text" id="f_date" placeholder="เช่น 12/9/2510" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">สถานะ</label>
+                    <input type="text" id="f_status" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">สภาพสินทรัพย์</label>
+                    <input type="text" id="f_condition" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+
+                    <div class="col-span-1 md:col-span-2"><label class="block font-semibold mb-1 text-sm text-gray-600">หน่วยงานที่รับผิดชอบ</label>
+                    <input type="text" id="f_dept" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    
+                    <div class="col-span-1 md:col-span-4"><label class="block font-semibold mb-1 text-sm text-gray-600">รายละเอียดเพิ่มเติม</label>
+                    <textarea id="f_details" rows="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></textarea></div>
+
+                    <div class="col-span-1 md:col-span-4 flex gap-4 mt-2">
+                        <button type="submit" class="bg-[#1e3a8a] text-white px-8 py-2 rounded-lg font-bold hover:bg-blue-800 shadow">💾 บันทึกข้อมูล</button>
+                        <button type="button" id="cancelBtn" class="hidden bg-gray-300 text-gray-700 px-8 py-2 rounded-lg font-bold hover:bg-gray-400">ยกเลิก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="summaryCards" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gradient-to-r from-[#1e3a8a] to-blue-600 text-white p-6 rounded-xl shadow-md">
+                <p class="text-blue-100 mb-1">ยอดรวมรายการทั้งหมด</p>
+                <p class="text-4xl font-bold" id="sumCount">0 <span class="text-lg font-normal">รายการ</span></p>
+            </div>
+            <div class="bg-white border border-blue-100 p-6 rounded-xl shadow-sm">
+                <p class="text-gray-500 font-semibold mb-1">มูลค่ารวมสินทรัพย์</p>
+                <p class="text-3xl font-bold text-orange-600" id="sumValue">฿ 0.00</p>
+            </div>
+            <div class="bg-white border border-blue-100 p-6 rounded-xl shadow-sm">
+                <p class="text-gray-500 font-semibold mb-1">ประเภทที่มีมากที่สุด</p>
+                <p class="text-2xl font-bold text-[#1e3a8a] truncate" id="sumTopCat">-</p>
+                <p class="text-sm text-gray-400 mt-1" id="sumTopCatCount">0 รายการ</p>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-md border-t-4 border-[#1e3a8a] overflow-hidden">
+            <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-wrap gap-4">
+                <input type="text" id="searchInput" placeholder="🔍 ค้นหา รหัส / ชื่อสินทรัพย์..." class="w-full md:w-1/3 p-3 border rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-none">
+                <select id="catFilter" class="w-full md:w-1/4 p-3 border rounded-lg bg-white outline-none"><option value="">-- ทุกประเภท --</option></select>
+                <select id="deptFilter" class="w-full md:w-1/4 p-3 border rounded-lg bg-white outline-none"><option value="">-- ทุกหน่วยงาน --</option></select>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[1000px]">
+                    <thead>
+                        <tr class="bg-[#1e3a8a] text-white">
+                            <th class="p-4 w-48">รหัสสินทรัพย์</th>
+                            <th class="p-4">ชื่อ / รายละเอียด</th>
+                            <th class="p-4 w-40">ประเภท</th>
+                            <th class="p-4 text-right w-32">ราคา (บาท)</th>
+                            <th class="p-4 text-center w-28">สถานะ</th>
+                            <th class="p-4 admin-col hidden w-32 text-center">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody">
+                        <tr><td colspan="6" class="p-8 text-center text-gray-500">⏳ กำลังโหลดข้อมูล...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="bg-gray-50 p-4 border-t flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-gray-600 font-medium" id="pageInfo">แสดงรายการที่ 0 ถึง 0</div>
+                <div class="flex gap-2">
+                    <button id="prevBtn" class="px-5 py-2 bg-white border rounded-lg hover:bg-gray-100 disabled:opacity-50 transition">◀ ก่อนหน้า</button>
+                    <button id="nextBtn" class="px-5 py-2 bg-[#1e3a8a] text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 transition">ถัดไป ▶</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="assetModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-auto overflow-hidden">
+            <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center">
+                <h3 class="text-xl font-bold">📋 รายละเอียดทรัพย์สิน</h3>
+                <button onclick="document.getElementById('assetModal').classList.add('hidden')" class="text-white hover:text-red-300 text-3xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 md:p-8" id="modalBody"></div>
+            <div class="bg-gray-50 px-6 py-4 border-t flex justify-end">
+                <button onclick="document.getElementById('assetModal').classList.add('hidden')" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold transition">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
+            authDomain: "suchartstudio-9a78d.firebaseapp.com",
+            databaseURL: "https://suchartstudio-9a78d-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "suchartstudio-9a78d"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // ตัวแปรระบบ
+        let allAssets = [], filteredAssets = [];
+        let currentPage = 1; const itemsPerPage = 50;
+        let isAdmin = false;
+        let isFiltersPopulated = false;
+
+        // สลับโหมด Admin
+        document.getElementById('toggleAdminBtn').addEventListener('click', () => {
+            isAdmin = !isAdmin;
+            document.getElementById('adminPanel').classList.toggle('hidden', !isAdmin);
+            document.querySelectorAll('.admin-col').forEach(el => el.classList.toggle('hidden', !isAdmin));
+            document.getElementById('toggleAdminBtn').innerHTML = isAdmin ? '👁️ ปิดโหมดผู้ดูแลระบบ' : '🔒 เปิดโหมดผู้ดูแลระบบ';
+        });
+
+        // 1. โหลดข้อมูล Real-time จาก Firebase
+        onValue(ref(db, 'assets'), (snapshot) => {
+            const data = snapshot.val();
+            if(data) {
+                allAssets = Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse();
+            } else {
+                allAssets = [];
+            }
+            
+            if(!isFiltersPopulated && allAssets.length > 0) {
+                populateFilters();
+                isFiltersPopulated = true;
+            }
+            applyFilters();
+        });
+
+        // 2. จัดการตัวกรองและการค้นหา
+        function populateFilters() {
+            const cats = new Set(allAssets.map(a => a.category).filter(Boolean));
+            const depts = new Set(allAssets.map(a => a.department).filter(Boolean));
+            const catF = document.getElementById('catFilter');
+            const deptF = document.getElementById('deptFilter');
+            cats.forEach(c => catF.innerHTML += `<option value="${c}">${c}</option>`);
+            depts.forEach(d => deptF.innerHTML += `<option value="${d}">${d}</option>`);
+        }
+
+        window.applyFilters = () => {
+            const kw = document.getElementById('searchInput').value.toLowerCase();
+            const cat = document.getElementById('catFilter').value;
+            const dept = document.getElementById('deptFilter').value;
+            
+            filteredAssets = allAssets.filter(a => {
+                const matchKw = `${a.assetId} ${a.name} ${a.details}`.toLowerCase().includes(kw);
+                const matchCat = cat === '' || a.category === cat;
+                const matchDept = dept === '' || a.department === dept;
+                return matchKw && matchCat && matchDept;
+            });
+            currentPage = 1;
+            renderTable();
+            updateSummaryCards(filteredAssets);
+        };
+
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('catFilter').addEventListener('change', applyFilters);
+        document.getElementById('deptFilter').addEventListener('change', applyFilters);
+
+        // 3. อัปเดตป้ายตัวเลขสรุปผล
+        function updateSummaryCards(dataList) {
+            let totalVal = dataList.reduce((sum, a) => sum + (parseFloat(a.price) || 0), 0);
+            let catCounts = {};
+            dataList.forEach(a => { if(a.category) catCounts[a.category] = (catCounts[a.category] || 0) + 1; });
+            let topCat = Object.entries(catCounts).sort((a,b) => b[1] - a[1])[0];
+            
+            document.getElementById('sumCount').innerText = `${dataList.length.toLocaleString()} รายการ`;
+            document.getElementById('sumValue').innerText = `฿ ${totalVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('sumTopCat').innerText = topCat ? topCat[0] : '-';
+            document.getElementById('sumTopCatCount').innerText = `${topCat ? topCat[1].toLocaleString() : 0} รายการ`;
+        }
+
+        // 4. วาดตารางข้อมูล
+        window.renderTable = () => {
+            const tbody = document.getElementById('dataTableBody'); tbody.innerHTML = '';
+            const total = filteredAssets.length;
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = Math.min(start + itemsPerPage, total);
+            const paginated = filteredAssets.slice(start, end);
+            
+            if(paginated.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">ไม่พบข้อมูลที่ค้นหา</td></tr>`;
+                return;
+            }
+            
+            paginated.forEach(a => {
+                let tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-blue-50 cursor-pointer group";
+                tr.onclick = (e) => { if(!e.target.closest('button')) showModal(a.id); };
+                
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-sm text-gray-600">${a.assetId || '-'}</td>
+                    <td class="p-4">
+                        <div class="font-bold text-[#1e3a8a] line-clamp-2">${a.name || '-'}</div>
+                        <div class="text-xs text-gray-500 truncate max-w-xs mt-1">${a.details || ''}</div>
+                        <div class="text-xs text-blue-500 mt-1">📍 ${a.department || '-'}</div>
+                    </td>
+                    <td class="p-4">
+                        <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-sm">${a.category || '-'}</span>
+                        <div class="text-xs text-gray-500 mt-1">${a.type || '-'}</div>
+                    </td>
+                    <td class="p-4 text-right font-bold text-orange-600">฿ ${(a.price||0).toLocaleString()}</td>
+                    <td class="p-4 text-center">
+                        <span class="px-2 py-1 bg-gray-100 rounded-lg text-sm border font-medium">${a.status || '-'}</span>
+                    </td>
+                    <td class="p-4 text-center admin-col ${isAdmin ? '' : 'hidden'}">
+                        <button onclick="editAsset('${a.id}')" class="bg-yellow-400 text-white px-3 py-1 rounded shadow hover:bg-yellow-500 text-sm mb-1 w-full">แก้ไข</button>
+                        <button onclick="deleteAsset('${a.id}')" class="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-600 text-sm w-full">ลบ</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('pageInfo').innerText = `แสดงรายการที่ ${total > 0 ? start + 1 : 0} ถึง ${end} จากทั้งหมด ${total} รายการ`;
+            document.getElementById('prevBtn').disabled = currentPage === 1;
+            document.getElementById('nextBtn').disabled = currentPage >= Math.ceil(total / itemsPerPage);
+        };
+
+        document.getElementById('prevBtn').addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderTable(); }});
+        document.getElementById('nextBtn').addEventListener('click', () => { if(currentPage < Math.ceil(filteredAssets.length / itemsPerPage)) { currentPage++; renderTable(); }});
+
+        // 5. ระบบดูรายละเอียด (Modal Pop-up)
+        window.showModal = (id) => {
+            const a = allAssets.find(x => x.id === id);
+            document.getElementById('modalBody').innerHTML = `
+                <div class="bg-blue-50 p-5 rounded-xl mb-6 border border-blue-200">
+                    <h4 class="text-2xl font-bold text-[#1e3a8a]">${a.name || '-'}</h4>
+                    <p class="text-blue-700 font-mono mt-1 font-semibold">รหัสสินทรัพย์: ${a.assetId || '-'}</p>
+                </div>
+                <div class="grid grid-cols-2 gap-y-6 gap-x-4">
+                    <div><p class="text-sm text-gray-500 mb-1">ประเภท</p><p class="font-semibold text-lg">${a.category || '-'}</p></div>
+                    <div><p class="text-sm text-gray-500 mb-1">ชนิด</p><p class="font-semibold text-lg">${a.type || '-'}</p></div>
+                    <div><p class="text-sm text-gray-500 mb-1">วันที่ได้มา</p><p class="font-medium">${a.acquiredDate || '-'}</p></div>
+                    <div><p class="text-sm text-gray-500 mb-1">ราคาที่ได้มา</p><p class="font-bold text-xl text-orange-600">฿ ${(a.price||0).toLocaleString(undefined, {minimumFractionDigits: 2})}</p></div>
+                    <div><p class="text-sm text-gray-500 mb-1">สถานะ</p><p class="font-medium">${a.status || '-'}</p></div>
+                    <div><p class="text-sm text-gray-500 mb-1">สภาพสินทรัพย์</p><p class="font-medium text-green-700">${a.condition || '-'}</p></div>
+                    <div class="col-span-2"><p class="text-sm text-gray-500 mb-1">หน่วยงานที่ดูแล</p><p class="font-semibold text-gray-800">${a.department || '-'}</p></div>
+                    <div class="col-span-2"><p class="text-sm text-gray-500 mb-1">รายละเอียดเพิ่มเติม</p><p class="text-gray-700 bg-gray-50 p-4 rounded-lg border leading-relaxed">${a.details || '-'}</p></div>
+                </div>
+            `;
+            document.getElementById('assetModal').classList.remove('hidden');
+        };
+
+        // 6. ระบบนำเข้าไฟล์ CSV อัจฉริยะ (Import)
+        document.getElementById('csvFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            Swal.fire({ title: 'กำลังประมวลผล...', html: 'ระบบกำลังอ่านและตัดหัวตารางอัจฉริยะ', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const lines = event.target.result.split(/\r?\n/);
+                let startIdx = -1, colOffset = 0;
+                
+                // ค้นหาแถวที่เป็นข้อมูลจริงๆ (ตัด 13 บรรทัดแรกทิ้งอัตโนมัติ)
+                for(let i=0; i<lines.length; i++) {
+                    if(lines[i].match(/^"?\s*1\s*"?\s*,/)) { startIdx = i; colOffset = -1; break; } // กรณีไม่มีลูกน้ำนำหน้า
+                    if(lines[i].match(/^"?\s*,\s*"?\s*1\s*"?\s*,/)) { startIdx = i; colOffset = 0; break; } // กรณีมีลูกน้ำนำหน้า
+                }
+                
+                if (startIdx === -1) {
+                    Swal.fire('ผิดพลาด', 'ไม่พบรูปแบบข้อมูลที่ถูกต้อง (ไม่พบแถวที่ลำดับเป็น 1)', 'error');
+                    return;
+                }
+
+                const csvData = lines.slice(startIdx).join('\n');
+
+                Papa.parse(csvData, {
+                    header: false, skipEmptyLines: true,
+                    complete: async function(results) {
+                        const updates = {};
+                        let count = 0;
+                        results.data.forEach(row => {
+                            const aId = row[4 + colOffset]?.trim();
+                            if(aId) {
+                                // แปลงอักขระแปลกๆ ให้เป็น Key ที่ Firebase ยอมรับได้
+                                const key = aId.replace(/[.#$\[\]]/g, '_'); 
+                                let rawPrice = String(row[8 + colOffset] || '0').replace(/,/g, '');
+                                updates['/assets/' + key] = {
+                                    assetId: aId,
+                                    category: row[2 + colOffset]?.trim() || '',
+                                    type: row[3 + colOffset]?.trim() || '',
+                                    name: row[5 + colOffset]?.trim() || '',
+                                    details: row[6 + colOffset]?.trim() || '',
+                                    acquiredDate: row[7 + colOffset]?.trim() || '',
+                                    price: parseFloat(rawPrice) || 0,
+                                    status: row[14 + colOffset]?.trim() || '',
+                                    condition: row[27 + colOffset]?.trim() || '',
+                                    department: row[28 + colOffset]?.trim() || ''
+                                };
+                                count++;
+                            }
+                        });
+
+                        try {
+                            await update(ref(db), updates);
+                            Swal.fire('นำเข้าสำเร็จ!', `อัปโหลดเข้าระบบทั้งหมด ${count} รายการ`, 'success');
+                            document.getElementById('csvFileInput').value = '';
+                        } catch(err) { Swal.fire('ข้อผิดพลาด Database', err.message, 'error'); }
+                    }
+                });
+            };
+            reader.readAsText(file, "UTF-8");
+        });
+
+        // 7. ระบบลบและแก้ไข (Manual CRUD)
+        window.deleteAsset = (id) => {
+            Swal.fire({ title: 'ยืนยันการลบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' })
+            .then(async (result) => {
+                if (result.isConfirmed) {
+                    await remove(ref(db, 'assets/' + id));
+                    Swal.fire('ลบแล้ว!', 'ข้อมูลถูกลบเรียบร้อย', 'success');
+                }
+            });
+        };
+
+        window.editAsset = (id) => {
+            const a = allAssets.find(x => x.id === id);
+            document.getElementById('editId').value = a.id;
+            document.getElementById('f_id').value = a.assetId || '';
+            document.getElementById('f_name').value = a.name || '';
+            document.getElementById('f_category').value = a.category || '';
+            document.getElementById('f_type').value = a.type || '';
+            document.getElementById('f_date').value = a.acquiredDate || '';
+            document.getElementById('f_price').value = a.price || '';
+            document.getElementById('f_status').value = a.status || '';
+            document.getElementById('f_condition').value = a.condition || '';
+            document.getElementById('f_dept').value = a.department || '';
+            document.getElementById('f_details').value = a.details || '';
+            
+            document.getElementById('formTitle').innerText = '✏️ แก้ไขรายการทรัพย์สิน';
+            document.getElementById('cancelBtn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            document.getElementById('assetForm').reset();
+            document.getElementById('editId').value = '';
+            document.getElementById('formTitle').innerText = '➕ เพิ่มรายการทรัพย์สินใหม่ (Manual)';
+            document.getElementById('cancelBtn').classList.add('hidden');
+        });
+
+        document.getElementById('assetForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('editId').value;
+            const aId = document.getElementById('f_id').value.trim();
+            const assetData = {
+                assetId: aId,
+                name: document.getElementById('f_name').value.trim(),
+                category: document.getElementById('f_category').value.trim(),
+                type: document.getElementById('f_type').value.trim(),
+                acquiredDate: document.getElementById('f_date').value.trim(),
+                price: parseFloat(document.getElementById('f_price').value) || 0,
+                status: document.getElementById('f_status').value.trim(),
+                condition: document.getElementById('f_condition').value.trim(),
+                department: document.getElementById('f_dept').value.trim(),
+                details: document.getElementById('f_details').value.trim()
+            };
+            
+            try {
+                if(editId) {
+                    await update(ref(db, 'assets/' + editId), assetData);
+                    Swal.fire('สำเร็จ', 'อัปเดตข้อมูลแล้ว', 'success');
+                } else {
+                    const key = aId.replace(/[.#$\[\]]/g, '_');
+                    await set(ref(db, 'assets/' + key), assetData);
+                    Swal.fire('สำเร็จ', 'เพิ่มข้อมูลใหม่แล้ว', 'success');
+                }
+                document.getElementById('cancelBtn').click();
+            } catch(err) { Swal.fire('ข้อผิดพลาด', err.message, 'error'); }
+        });
+    </script>
+</body>
+</html>
