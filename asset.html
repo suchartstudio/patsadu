@@ -16,6 +16,7 @@
 </head>
 <body class="text-slate-800">
 
+    <!-- Navbar -->
     <nav class="bg-[#1e3a8a] text-white shadow-md">
         <div class="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <h1 class="text-2xl font-bold">🏢 ระบบทะเบียนทรัพย์สิน เทศบาลนครขอนแก่น</h1>
@@ -25,18 +26,20 @@
 
     <main class="container mx-auto px-6 py-8 max-w-7xl">
         
+        <!-- สวิตช์สลับโหมด -->
         <div class="flex justify-end mb-6">
             <button id="toggleAdminBtn" class="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition shadow-sm border border-gray-300 flex items-center gap-2">
                 🔒 เปิดโหมดผู้ดูแลระบบ
             </button>
         </div>
 
+        <!-- 🔴 โหมด ADMIN (ซ่อนเป็นค่าเริ่มต้น) -->
         <div id="adminPanel" class="hidden mb-10 space-y-6">
-            
+            <!-- นำเข้า CSV อัจฉริยะ -->
             <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-orange-500">
                 <h3 class="text-xl font-bold mb-2 text-orange-700">📥 นำเข้าข้อมูลทะเบียนทรัพย์สิน (จากระบบ e-LAAS / Excel)</h3>
                 <p class="text-sm text-gray-600 mb-4 bg-orange-50 p-3 rounded-lg border border-orange-100">
-                    <b>คำแนะนำ:</b> ให้เปิดไฟล์ Excel (.xlsx) ของท่าน แล้วเลือก <b>Save As -> "CSV UTF-8 (Comma delimited)"</b> ก่อนนำเข้า<br>
+                    <b>คำแนะนำ:</b> ให้เปิดไฟล์ Excel ของท่าน แล้วเลือก <b>Save As -> "CSV UTF-8 (Comma delimited)"</b> ก่อนนำเข้า<br>
                     * ระบบถูกออกแบบมาให้ข้ามหัวตารางขยะ 13 บรรทัดแรกให้อัตโนมัติ ไม่ต้องลบเอง
                 </p>
                 <div class="flex flex-col md:flex-row gap-4 items-center">
@@ -44,41 +47,21 @@
                 </div>
             </div>
 
+            <!-- ฟอร์มเพิ่ม/แก้ไข -->
             <div class="bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-600">
                 <h3 class="text-xl font-bold mb-6 text-[#1e3a8a]" id="formTitle">➕ เพิ่มรายการทรัพย์สินใหม่ (Manual)</h3>
                 <form id="assetForm" class="grid grid-cols-1 md:grid-cols-4 gap-5">
                     <input type="hidden" id="editId">
-                    
-                    <div class="col-span-1 md:col-span-2"><label class="block font-semibold mb-1 text-sm text-gray-600">รหัสสินทรัพย์ *</label>
-                    <input type="text" id="f_id" required class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
-                    
-                    <div class="col-span-1 md:col-span-2"><label class="block font-semibold mb-1 text-sm text-gray-600">ชื่อสินทรัพย์ *</label>
-                    <input type="text" id="f_name" required class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
-                    
-                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">ประเภท</label>
-                    <input type="text" id="f_category" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
-                    
-                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">ชนิด</label>
-                    <input type="text" id="f_type" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
-                    
-                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">ราคาสินทรัพย์</label>
-                    <input type="number" id="f_price" step="0.01" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
-                    
-                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">วันที่ได้มา</label>
-                    <input type="text" id="f_date" placeholder="เช่น 12/9/2510" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
-                    
-                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">สถานะ</label>
-                    <input type="text" id="f_status" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
-                    
-                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">สภาพสินทรัพย์</label>
-                    <input type="text" id="f_condition" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
-
-                    <div class="col-span-1 md:col-span-2"><label class="block font-semibold mb-1 text-sm text-gray-600">หน่วยงานที่รับผิดชอบ</label>
-                    <input type="text" id="f_dept" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
-                    
-                    <div class="col-span-1 md:col-span-4"><label class="block font-semibold mb-1 text-sm text-gray-600">รายละเอียดเพิ่มเติม</label>
-                    <textarea id="f_details" rows="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></textarea></div>
-
+                    <div class="col-span-1 md:col-span-2"><label class="block font-semibold mb-1 text-sm text-gray-600">รหัสสินทรัพย์ *</label><input type="text" id="f_id" required class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    <div class="col-span-1 md:col-span-2"><label class="block font-semibold mb-1 text-sm text-gray-600">ชื่อสินทรัพย์ *</label><input type="text" id="f_name" required class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">ประเภท</label><input type="text" id="f_category" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">ชนิด</label><input type="text" id="f_type" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">ราคาสินทรัพย์</label><input type="number" id="f_price" step="0.01" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">วันที่ได้มา</label><input type="text" id="f_date" placeholder="เช่น 12/9/2510" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">สถานะ</label><input type="text" id="f_status" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    <div><label class="block font-semibold mb-1 text-sm text-gray-600">สภาพสินทรัพย์</label><input type="text" id="f_condition" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    <div class="col-span-1 md:col-span-2"><label class="block font-semibold mb-1 text-sm text-gray-600">หน่วยงานที่รับผิดชอบ</label><input type="text" id="f_dept" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></div>
+                    <div class="col-span-1 md:col-span-4"><label class="block font-semibold mb-1 text-sm text-gray-600">รายละเอียดเพิ่มเติม</label><textarea id="f_details" rows="2" class="w-full p-2 border rounded focus:ring-2 focus:ring-[#1e3a8a]"></textarea></div>
                     <div class="col-span-1 md:col-span-4 flex gap-4 mt-2">
                         <button type="submit" class="bg-[#1e3a8a] text-white px-8 py-2 rounded-lg font-bold hover:bg-blue-800 shadow">💾 บันทึกข้อมูล</button>
                         <button type="button" id="cancelBtn" class="hidden bg-gray-300 text-gray-700 px-8 py-2 rounded-lg font-bold hover:bg-gray-400">ยกเลิก</button>
@@ -87,7 +70,10 @@
             </div>
         </div>
 
-        <div id="summaryCards" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- 🟢 โหมด LIST (แสดงผล) -->
+        
+        <!-- ป้าย 3 อันบน (ยอดรวม) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
             <div class="bg-gradient-to-r from-[#1e3a8a] to-blue-600 text-white p-6 rounded-xl shadow-md">
                 <p class="text-blue-100 mb-1">ยอดรวมรายการทั้งหมด</p>
                 <p class="text-4xl font-bold" id="sumCount">0 <span class="text-lg font-normal">รายการ</span></p>
@@ -103,13 +89,33 @@
             </div>
         </div>
 
+        <!-- เพิ่มใหม่: ป้ายแยกหมวดหมู่และหน่วยงาน -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- 1. สรุปแยกตามประเภท -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100 flex flex-col h-full">
+                <h4 class="text-sm font-bold text-gray-500 mb-3 border-b pb-2">📊 จำนวนแยกตามประเภทสินทรัพย์</h4>
+                <div id="categoryBreakdown" class="flex flex-wrap gap-2 overflow-y-auto max-h-40 pr-2">
+                    <!-- ป้ายประเภทจะถูกใส่ที่นี่ -->
+                </div>
+            </div>
+            <!-- 2. สรุปแยกตามหน่วยงาน -->
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100 flex flex-col h-full">
+                <h4 class="text-sm font-bold text-gray-500 mb-3 border-b pb-2">🏢 จำนวนแยกตามหน่วยงาน</h4>
+                <div id="deptBreakdown" class="flex flex-wrap gap-2 overflow-y-auto max-h-40 pr-2">
+                    <!-- ป้ายหน่วยงานจะถูกใส่ที่นี่ -->
+                </div>
+            </div>
+        </div>
+
         <div class="bg-white rounded-xl shadow-md border-t-4 border-[#1e3a8a] overflow-hidden">
+            <!-- ตัวกรอง -->
             <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-wrap gap-4">
-                <input type="text" id="searchInput" placeholder="🔍 ค้นหา รหัส / ชื่อสินทรัพย์..." class="w-full md:w-1/3 p-3 border rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-none">
-                <select id="catFilter" class="w-full md:w-1/4 p-3 border rounded-lg bg-white outline-none"><option value="">-- ทุกประเภท --</option></select>
-                <select id="deptFilter" class="w-full md:w-1/4 p-3 border rounded-lg bg-white outline-none"><option value="">-- ทุกหน่วยงาน --</option></select>
+                <input type="text" id="searchInput" placeholder="🔍 ค้นหา รหัส / ชื่อสินทรัพย์..." class="w-full md:w-1/3 p-3 border rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-none shadow-sm">
+                <select id="catFilter" class="w-full md:w-1/4 p-3 border rounded-lg bg-white outline-none shadow-sm"><option value="">-- ทุกประเภท --</option></select>
+                <select id="deptFilter" class="w-full md:w-1/4 p-3 border rounded-lg bg-white outline-none shadow-sm"><option value="">-- ทุกหน่วยงาน --</option></select>
             </div>
             
+            <!-- ตาราง -->
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse min-w-[1000px]">
                     <thead>
@@ -128,6 +134,7 @@
                 </table>
             </div>
 
+            <!-- เปลี่ยนหน้า -->
             <div class="bg-gray-50 p-4 border-t flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="text-gray-600 font-medium" id="pageInfo">แสดงรายการที่ 0 ถึง 0</div>
                 <div class="flex gap-2">
@@ -138,6 +145,7 @@
         </div>
     </main>
 
+    <!-- Modal รายละเอียด (Pop-up) -->
     <div id="assetModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-auto overflow-hidden">
             <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center">
@@ -151,6 +159,7 @@
         </div>
     </div>
 
+    <!-- SCRIPT การทำงาน -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
         import { getDatabase, ref, onValue, set, update, remove } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
@@ -164,13 +173,11 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // ตัวแปรระบบ
         let allAssets = [], filteredAssets = [];
         let currentPage = 1; const itemsPerPage = 50;
         let isAdmin = false;
         let isFiltersPopulated = false;
 
-        // สลับโหมด Admin
         document.getElementById('toggleAdminBtn').addEventListener('click', () => {
             isAdmin = !isAdmin;
             document.getElementById('adminPanel').classList.toggle('hidden', !isAdmin);
@@ -178,14 +185,9 @@
             document.getElementById('toggleAdminBtn').innerHTML = isAdmin ? '👁️ ปิดโหมดผู้ดูแลระบบ' : '🔒 เปิดโหมดผู้ดูแลระบบ';
         });
 
-        // 1. โหลดข้อมูล Real-time จาก Firebase
         onValue(ref(db, 'assets'), (snapshot) => {
             const data = snapshot.val();
-            if(data) {
-                allAssets = Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse();
-            } else {
-                allAssets = [];
-            }
+            allAssets = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse() : [];
             
             if(!isFiltersPopulated && allAssets.length > 0) {
                 populateFilters();
@@ -194,7 +196,6 @@
             applyFilters();
         });
 
-        // 2. จัดการตัวกรองและการค้นหา
         function populateFilters() {
             const cats = new Set(allAssets.map(a => a.category).filter(Boolean));
             const depts = new Set(allAssets.map(a => a.department).filter(Boolean));
@@ -224,20 +225,47 @@
         document.getElementById('catFilter').addEventListener('change', applyFilters);
         document.getElementById('deptFilter').addEventListener('change', applyFilters);
 
-        // 3. อัปเดตป้ายตัวเลขสรุปผล
+        // ระบบสรุปผลและวาดป้าย (Badges) แบบไดนามิก
         function updateSummaryCards(dataList) {
             let totalVal = dataList.reduce((sum, a) => sum + (parseFloat(a.price) || 0), 0);
-            let catCounts = {};
-            dataList.forEach(a => { if(a.category) catCounts[a.category] = (catCounts[a.category] || 0) + 1; });
-            let topCat = Object.entries(catCounts).sort((a,b) => b[1] - a[1])[0];
+            let catCounts = {}, deptCounts = {};
             
+            dataList.forEach(a => { 
+                let cat = (a.category || '').trim() || 'ไม่ระบุประเภท';
+                let dept = (a.department || '').trim() || 'ไม่ระบุหน่วยงาน';
+                catCounts[cat] = (catCounts[cat] || 0) + 1; 
+                deptCounts[dept] = (deptCounts[dept] || 0) + 1; 
+            });
+
+            let sortedCats = Object.entries(catCounts).sort((a,b) => b[1] - a[1]);
+            let sortedDepts = Object.entries(deptCounts).sort((a,b) => b[1] - a[1]);
+            let topCat = sortedCats[0];
+            
+            // อัปเดต 3 ป้ายบนสุด
             document.getElementById('sumCount').innerText = `${dataList.length.toLocaleString()} รายการ`;
             document.getElementById('sumValue').innerText = `฿ ${totalVal.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-            document.getElementById('sumTopCat').innerText = topCat ? topCat[0] : '-';
+            document.getElementById('sumTopCat').innerText = topCat && topCat[0] !== 'ไม่ระบุประเภท' ? topCat[0] : '-';
             document.getElementById('sumTopCatCount').innerText = `${topCat ? topCat[1].toLocaleString() : 0} รายการ`;
+
+            // อัปเดตป้ายแยกหมวดหมู่ (Category)
+            const catHtml = sortedCats.map(c => `
+                <div class="bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
+                    <span class="font-medium truncate max-w-[150px]" title="${c[0]}">${c[0]}</span>
+                    <span class="bg-white px-2 py-0.5 rounded-full text-xs font-bold text-blue-600 shadow-sm">${c[1]}</span>
+                </div>
+            `).join('');
+            document.getElementById('categoryBreakdown').innerHTML = catHtml || '<span class="text-gray-400 text-sm">ไม่มีข้อมูล</span>';
+
+            // อัปเดตป้ายแยกหน่วยงาน (Department)
+            const deptHtml = sortedDepts.map(d => `
+                <div class="bg-orange-50 text-orange-800 border border-orange-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
+                    <span class="font-medium truncate max-w-[150px]" title="${d[0]}">${d[0]}</span>
+                    <span class="bg-white px-2 py-0.5 rounded-full text-xs font-bold text-orange-600 shadow-sm">${d[1]}</span>
+                </div>
+            `).join('');
+            document.getElementById('deptBreakdown').innerHTML = deptHtml || '<span class="text-gray-400 text-sm">ไม่มีข้อมูล</span>';
         }
 
-        // 4. วาดตารางข้อมูล
         window.renderTable = () => {
             const tbody = document.getElementById('dataTableBody'); tbody.innerHTML = '';
             const total = filteredAssets.length;
@@ -268,7 +296,7 @@
                     </td>
                     <td class="p-4 text-right font-bold text-orange-600">฿ ${(a.price||0).toLocaleString()}</td>
                     <td class="p-4 text-center">
-                        <span class="px-2 py-1 bg-gray-100 rounded-lg text-sm border font-medium">${a.status || '-'}</span>
+                        <span class="px-2 py-1 bg-gray-100 rounded-lg text-sm border font-medium whitespace-nowrap">${a.status || '-'}</span>
                     </td>
                     <td class="p-4 text-center admin-col ${isAdmin ? '' : 'hidden'}">
                         <button onclick="editAsset('${a.id}')" class="bg-yellow-400 text-white px-3 py-1 rounded shadow hover:bg-yellow-500 text-sm mb-1 w-full">แก้ไข</button>
@@ -286,7 +314,6 @@
         document.getElementById('prevBtn').addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderTable(); }});
         document.getElementById('nextBtn').addEventListener('click', () => { if(currentPage < Math.ceil(filteredAssets.length / itemsPerPage)) { currentPage++; renderTable(); }});
 
-        // 5. ระบบดูรายละเอียด (Modal Pop-up)
         window.showModal = (id) => {
             const a = allAssets.find(x => x.id === id);
             document.getElementById('modalBody').innerHTML = `
@@ -308,40 +335,28 @@
             document.getElementById('assetModal').classList.remove('hidden');
         };
 
-        // 6. ระบบนำเข้าไฟล์ CSV อัจฉริยะ (Import)
         document.getElementById('csvFileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if(!file) return;
-
             Swal.fire({ title: 'กำลังประมวลผล...', html: 'ระบบกำลังอ่านและตัดหัวตารางอัจฉริยะ', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
             const reader = new FileReader();
             reader.onload = function(event) {
                 const lines = event.target.result.split(/\r?\n/);
                 let startIdx = -1, colOffset = 0;
-                
-                // ค้นหาแถวที่เป็นข้อมูลจริงๆ (ตัด 13 บรรทัดแรกทิ้งอัตโนมัติ)
                 for(let i=0; i<lines.length; i++) {
-                    if(lines[i].match(/^"?\s*1\s*"?\s*,/)) { startIdx = i; colOffset = -1; break; } // กรณีไม่มีลูกน้ำนำหน้า
-                    if(lines[i].match(/^"?\s*,\s*"?\s*1\s*"?\s*,/)) { startIdx = i; colOffset = 0; break; } // กรณีมีลูกน้ำนำหน้า
+                    if(lines[i].match(/^"?\s*1\s*"?\s*,/)) { startIdx = i; colOffset = -1; break; } 
+                    if(lines[i].match(/^"?\s*,\s*"?\s*1\s*"?\s*,/)) { startIdx = i; colOffset = 0; break; } 
                 }
-                
-                if (startIdx === -1) {
-                    Swal.fire('ผิดพลาด', 'ไม่พบรูปแบบข้อมูลที่ถูกต้อง (ไม่พบแถวที่ลำดับเป็น 1)', 'error');
-                    return;
-                }
-
+                if (startIdx === -1) { Swal.fire('ผิดพลาด', 'ไม่พบรูปแบบข้อมูลที่ถูกต้อง (ไม่พบแถวที่ลำดับเป็น 1)', 'error'); return; }
                 const csvData = lines.slice(startIdx).join('\n');
 
                 Papa.parse(csvData, {
                     header: false, skipEmptyLines: true,
                     complete: async function(results) {
-                        const updates = {};
-                        let count = 0;
+                        const updates = {}; let count = 0;
                         results.data.forEach(row => {
                             const aId = row[4 + colOffset]?.trim();
                             if(aId) {
-                                // แปลงอักขระแปลกๆ ให้เป็น Key ที่ Firebase ยอมรับได้
                                 const key = aId.replace(/[.#$\[\]]/g, '_'); 
                                 let rawPrice = String(row[8 + colOffset] || '0').replace(/,/g, '');
                                 updates['/assets/' + key] = {
@@ -359,7 +374,6 @@
                                 count++;
                             }
                         });
-
                         try {
                             await update(ref(db), updates);
                             Swal.fire('นำเข้าสำเร็จ!', `อัปโหลดเข้าระบบทั้งหมด ${count} รายการ`, 'success');
@@ -371,7 +385,6 @@
             reader.readAsText(file, "UTF-8");
         });
 
-        // 7. ระบบลบและแก้ไข (Manual CRUD)
         window.deleteAsset = (id) => {
             Swal.fire({ title: 'ยืนยันการลบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' })
             .then(async (result) => {
