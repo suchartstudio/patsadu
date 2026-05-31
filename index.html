@@ -3,139 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบงานดิจิทัล - เทศบาลนครขอนแก่น</title>
+    <title>ศูนย์กลางระบบสารสนเทศ (Portal) - เทศบาลนครขอนแก่น</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Sarabun', sans-serif; background-color: #f1f5f9; font-size: 1.125rem; }
-    </style>
+    
+    <!-- Icon สำหรับแท็บเบราว์เซอร์ -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>">
+    
+    <style>
+        body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; }
+    </style>
 </head>
-<body class="text-slate-800">
+<body class="text-slate-800 min-h-screen flex flex-col">
 
-    <div id="appContent" class="hidden min-h-screen flex flex-col">
+    <!-- แถบด้านบน Navbar -->
+    <nav class="bg-gradient-to-r from-blue-900 to-blue-700 text-white shadow-lg">
+        <div class="container mx-auto px-6 py-6 flex items-center justify-center text-center">
+            <h1 class="text-2xl md:text-3xl font-bold tracking-wide">🏛️ ศูนย์กลางระบบสารสนเทศ (Portal) <br class="md:hidden"><span class="text-blue-200 md:text-white">เทศบาลนครขอนแก่น</span></h1>
+        </div>
+    </nav>
+
+    <!-- เนื้อหาหลัก -->
+    <main class="flex-grow container mx-auto px-6 py-12 max-w-6xl">
         
-        <header class="bg-[#1e3a8a] text-white shadow-md">
-            <div class="container mx-auto px-6 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="text-center mb-12">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-2">เลือกเข้าใช้งานระบบที่ต้องการ</h2>
+            <p class="text-slate-500">รวมศูนย์การทำงานเพื่อการบริหารจัดการข้อมูลที่รวดเร็วและมีประสิทธิภาพ</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            
+            <!-- แอป 1: ระบบยานพาหนะ -->
+            <a href="vehicle.html" class="group bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 hover:border-blue-500 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between">
                 <div>
-                    <h1 class="text-3xl font-bold">🏛️ ศูนย์รวมระบบงานดิจิทัล กองพัสดุและทรัพย์สิน</h1>
-                    <p class="text-blue-200 mt-1 text-base">เทศบาลนครขอนแก่น (Khon Kaen Smart City Portal)</p>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="text-sm text-blue-100 bg-[#172554] px-4 py-2 rounded-full shadow-inner flex items-center gap-2">
-                        <span id="userNameDisplay">กำลังโหลด...</span>
-                    </div>
-                    <button id="logoutBtn" class="bg-red-500 border border-red-700 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-red-600 transition">
-                        ออกจากระบบ
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <main class="container mx-auto px-6 py-12 flex-grow">
-            <div class="text-center mb-12">
-                <h2 class="text-2xl md:text-3xl font-bold text-slate-700">กรุณาเลือกบริการย่อยที่ต้องการใช้งาน</h2>
-                <p class="text-slate-500 mt-2 text-lg">เข้าสู่ระบบภายในงานแต่ละฝ่ายงานของเทศบาลผ่านหน้ารวมนี้</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                
-                <a href="vehicle.html" class="group bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 hover:border-blue-400 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between">
-                    <div>
-                        <div class="w-16 h-16 bg-blue-50 text-[#1e3a8a] text-3xl rounded-2xl flex items-center justify-center mb-5 group-hover:bg-[#1e3a8a] group-hover:text-white transition-all duration-300">
-                            📊
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-[#1e3a8a] transition-colors">ระบบรายงานสถานะยานพาหนะ</h3>
-                        <p class="text-slate-500 text-base leading-relaxed">แดชบอร์ดสรุปประเภทรถ ยอดรวมแยกหน่วยงาน และระบบแจ้งเตือนรายการยานพาหนะที่ใกล้ครบกำหนดต่อทะเบียนภาษีประจำปี</p>
-                    </div>
                     <div class="w-16 h-16 bg-blue-50 text-blue-700 text-3xl rounded-2xl flex items-center justify-center mb-5 group-hover:bg-blue-600 group-hover:text-white transition-all duration-300">
-            🏢
-        </div>
-        <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors">ระบบทะเบียนทรัพย์สิน</h3>
-        <p class="text-slate-500 text-base leading-relaxed">จัดการและค้นหาข้อมูลทรัพย์สิน นำเข้าจากระบบ e-LAAS / Excel และรายงานผลแบบเรียลไทม์</p>
-    </div>
-                    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-semibold text-[#1e3a8a]">
-                        เข้าสู่หน้างานย่อย 
-                        <span class="ml-2 transform group-hover:translate-x-1 transition-transform">→</span>
+                        🚗
                     </div>
-                </a>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors">ระบบจัดการยานพาหนะ</h3>
+                    <p class="text-slate-500 text-base leading-relaxed">ตรวจสอบสถานะการใช้งานยานพาหนะ วันต่ออายุภาษี ประวัติผู้รับผิดชอบ และการโอนย้าย</p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-semibold text-blue-600">
+                    เข้าสู่หน้างานย่อย 
+                    <span class="ml-2 transform group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+            </a>
 
-            <a href="sheet-dashboard.html" class="group bg-white p-6 rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 hover:border-green-500 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between">
-    <div>
-        <div class="w-16 h-16 bg-green-50 text-green-600 text-3xl rounded-2xl flex items-center justify-center mb-5 group-hover:bg-green-600 group-hover:text-white transition-all duration-300">
-            📈
+            <!-- แอป 2: ระบบโครงการ (Google Sheets) -->
+            <a href="sheet-dashboard.html" class="group bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 hover:border-green-500 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between">
+                <div>
+                    <div class="w-16 h-16 bg-green-50 text-green-700 text-3xl rounded-2xl flex items-center justify-center mb-5 group-hover:bg-green-600 group-hover:text-white transition-all duration-300">
+                        📈
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-green-700 transition-colors">ระบบฐานข้อมูลโครงการ</h3>
+                    <p class="text-slate-500 text-base leading-relaxed">วิเคราะห์สัดส่วนงบประมาณ ค้นหาโครงการรายชุมชน ดึงข้อมูลแบบ Real-time ตรงจาก Google Sheets</p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-semibold text-green-600">
+                    เข้าสู่หน้างานย่อย 
+                    <span class="ml-2 transform group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+            </a>
+
+            <!-- แอป 3: ระบบทะเบียนทรัพย์สิน -->
+            <a href="asset.html" class="group bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl border border-slate-200 hover:border-orange-500 transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between">
+                <div>
+                    <div class="w-16 h-16 bg-orange-50 text-orange-700 text-3xl rounded-2xl flex items-center justify-center mb-5 group-hover:bg-orange-600 group-hover:text-white transition-all duration-300">
+                        🏢
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-orange-700 transition-colors">ระบบทะเบียนทรัพย์สิน</h3>
+                    <p class="text-slate-500 text-base leading-relaxed">จัดการและค้นหาข้อมูลทรัพย์สิน นำเข้าจากระบบ e-LAAS / Excel และออกรายงานอัตโนมัติ</p>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-semibold text-orange-600">
+                    เข้าสู่หน้างานย่อย 
+                    <span class="ml-2 transform group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+            </a>
+
         </div>
-        <h3 class="text-xl font-bold text-slate-800 mb-2 group-hover:text-green-700 transition-colors">สรุปข้อมูลวงเงินงบประมาณ</h3>
-        <p class="text-slate-500 text-base leading-relaxed">สรุปรายงานสรุปสถานะผลการจัดซื้อจัดจ้าง แสดงกราฟ ตารางอัตโนมัติ และดูรายละเอียดได้</p>
-    </div>
-    <div class="mt-6 pt-4 border-t border-slate-100 flex items-center text-sm font-semibold text-green-600">
-        เข้าสู่หน้างานย่อย 
-        <span class="ml-2 transform group-hover:translate-x-1 transition-transform">→</span>
-    </div>
-</a>
+    </main>
 
-            </div>
-        </main>
+    <!-- ส่วนท้าย (Footer) -->
+    <footer class="bg-slate-800 text-slate-400 py-6 text-center text-sm mt-auto">
+        <p>© 2026 ระบบสารสนเทศเพื่อการจัดการ (MIS) - เทศบาลนครขอนแก่น</p>
+        <p class="text-slate-500 mt-1 text-xs">พัฒนาเพื่อยกระดับการบริหารงานและบริการประชาชน</p>
+    </footer>
 
-        <footer class="bg-slate-800 text-slate-400 text-center py-6 border-t border-slate-700 text-sm">
-            <p>© 2026 กองพัสดุและทรัพย์สิน เทศบาลนครขอนแก่น. ระบบพอร์ทัลกลางสำหรับบุคลากรภายใน.</p>
-        </footer>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
-        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
-
-        // ตั้งค่า Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
-            authDomain: "suchartstudio-9a78d.firebaseapp.com",
-            databaseURL: "https://suchartstudio-9a78d-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "suchartstudio-9a78d",
-            storageBucket: "suchartstudio-9a78d.firebasestorage.app",
-            messagingSenderId: "953369646185",
-            appId: "1:953369646185:web:9f2a9f8b7faf596a6ebef8"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-
-        // ============================================
-        // 1. ระบบตรวจสอบสิทธิ์ (Auth Guard)
-        // ============================================
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                // ถ้าล็อกอินแล้ว แสดงหน้าเว็บ
-                document.getElementById('appContent').classList.remove('hidden');
-                
-                // ดึงข้อมูล Role จาก Database เพื่อมาแสดงผล
-                const snapshot = await get(ref(db, 'users/' + user.uid));
-                let roleDisplay = 'ผู้ใช้งานทั่วไป';
-                
-                if (snapshot.exists()) {
-                    if (snapshot.val().role === 'admin') {
-                        roleDisplay = '⭐ ผู้ดูแลระบบ (Admin)';
-                    }
-                }
-                
-                // แสดงชื่อผู้ใช้บน Navbar
-                document.getElementById('userNameDisplay').innerHTML = `👤 ${user.displayName} <span class="ml-2 text-xs bg-blue-700 px-2 py-1 rounded text-white">${roleDisplay}</span>`;
-            } else {
-                // ถ้ายังไม่ได้ล็อกอิน ดีดกลับไปหน้า Login
-                window.location.href = 'login.html';
-            }
-        });
-
-        // ============================================
-        // 2. ฟังก์ชันออกจากระบบ
-        // ============================================
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.href = 'login.html';
-            });
-        });
-    </script>
 </body>
 </html>
