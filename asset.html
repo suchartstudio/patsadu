@@ -491,12 +491,24 @@
             reader.readAsText(file, "UTF-8");
         });
 
-        window.deleteAsset = (id) => {
-            Swal.fire({ title: 'ยืนยันการลบ?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'ลบทิ้ง', cancelButtonText: 'ยกเลิก' })
-            .then(async (result) => {
+       window.deleteAsset = (id) => {
+            Swal.fire({
+                title: 'ยืนยันการลบข้อมูล?',
+                text: 'กรุณากรอกรหัสผ่าน 6 หลักเพื่อยืนยันสิทธิ์',
+                input: 'password',
+                inputAttributes: { autocapitalize: 'off', maxlength: 6 },
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยันลบข้อมูล',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#d33'
+            }).then(async (result) => {
                 if (result.isConfirmed) {
-                    await remove(ref(db, 'assets/' + id));
-                    Swal.fire('ลบแล้ว!', 'ข้อมูลถูกลบเรียบร้อย', 'success');
+                    if (result.value === '878556') {
+                        await remove(ref(db, 'assets/' + id));
+                        Swal.fire('ลบแล้ว!', 'ข้อมูลถูกลบออกจากระบบเรียบร้อย', 'success');
+                    } else {
+                        Swal.fire('รหัสผ่านไม่ถูกต้อง!', 'คุณไม่ได้รับสิทธิ์ในการลบข้อมูลนี้', 'error');
+                    }
                 }
             });
         };
