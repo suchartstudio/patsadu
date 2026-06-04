@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard โครงการ - เทศบาลนครขอนแก่น</title>
+    <script>if (sessionStorage.getItem("portal_auth") !== "true") window.location.href = "index.html";</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
-    <script>if (sessionStorage.getItem("portal_auth") !== "true") window.location.href = "index.html";</script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📈</text></svg>">
     <style>
@@ -21,7 +21,9 @@
     <nav class="bg-[#166534] text-white shadow-md">
         <div class="container mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <h1 class="text-2xl font-bold">📈 ระบบฐานข้อมูลโครงการ</h1>
-            <a href="index.html" class="bg-green-800 text-white px-4 py-2 rounded-md font-semibold hover:bg-green-700 transition">🏠 กลับหน้าหลัก</a>
+            <div class="flex gap-2">
+                <a href="index.html" class="bg-green-800 text-white px-4 py-2 rounded-md font-semibold hover:bg-green-700 transition">🏠 กลับหน้าหลัก</a>
+            </div>
         </div>
     </nav>
 
@@ -54,6 +56,10 @@
         </div>
     </main>
 
+    <div id="sheetModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-8 overflow-y-auto max-h-[90vh]" id="modalBody"></div>
+    </div>
+
     <script>
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1B2-0bB79ftvpEcWTq5wITVb9XlVdZ2g1c1-1ruD_2Bg/export?format=csv";
         let allData = [], filteredData = [], headers = [];
@@ -65,12 +71,22 @@
             complete: function(results) {
                 allData = results.data.filter(r => Object.values(r).some(v => v));
                 headers = Object.keys(allData[0]);
-                filteredData = [...allData];
                 
-                const years = new Set(allData.map(r => r["ปีงบ"]).filter(v => v));
+                // ดึงรายการปีงบประมาณ และเรียงจากมากไปน้อย
+                const yearsArray = [...new Set(allData.map(r => parseInt(r["ปีงบ"])).filter(v => !isNaN(v)))].sort((a,b) => b - a);
                 const comms = new Set(allData.map(r => r["ชุมชน"]).filter(v => v));
-                years.forEach(y => document.getElementById('yearFilter').innerHTML += `<option value="${y}">${y}</option>`);
-                comms.forEach(c => document.getElementById('communityFilter').innerHTML += `<option value="${c}">${c}</option>`);
+                
+                const yearSelect = document.getElementById('yearFilter');
+                yearsArray.forEach(y => yearSelect.innerHTML += `<option value="${y}">${y}</option>`);
+                
+                const commSelect = document.getElementById('communityFilter');
+                comms.forEach(c => commSelect.innerHTML += `<option value="${c}">${c}</option>`);
+                
+                // --- ตั้งค่าตัวกรองเบื้องต้น ---
+                if (yearsArray.length > 0) {
+                    yearSelect.value = yearsArray[0]; // เลือกปีล่าสุดเสมอ
+                }
+                commSelect.value = ""; // เลือกทุกชุมชน
                 
                 initDashboard();
             }
@@ -79,9 +95,9 @@
         function initDashboard() {
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('dashboardContent').classList.remove('hidden');
-            renderTable();
-            updateSummaryCards(filteredData);
-            drawProjectChart();
+            
+            applyFilters(); // กรองข้อมูลตามค่าเริ่มต้นทันที (ตาราง & ป้ายสรุปจะอิงตามปีล่าสุด)
+            drawProjectChart(); // วาดกราฟ
         }
 
         function updateSummaryCards(dataList) {
@@ -99,6 +115,7 @@
             if(projectChart) projectChart.destroy();
             const cutoff = new Date(`${new Date().getFullYear()-1}-10-01`);
             
+            // กราฟจะแสดงภาพรวมหลัง ต.ค. ปีก่อน เสมอ ไม่ว่าตัวกรองด้านล่างจะเป็นปีอะไรก็ตาม
             const chartData = allData.filter(r => {
                 const dateVal = new Date(r["วันที่"] || '2026-01-01');
                 const str = (r["ชุมชน"] + r["หน่วยงาน"] + r["ชื่อโครงการ"]).toLowerCase();
@@ -124,14 +141,24 @@
         function renderTable() {
             const body = document.getElementById('tableBody'); body.innerHTML = '';
             document.getElementById('tableHeader').innerHTML = displayHeaders.map(h => `<th class="p-4">${h}</th>`).join('');
+            
+            if(filteredData.length === 0) {
+                body.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-500">ไม่พบข้อมูลที่ตรงกับตัวกรอง</td></tr>';
+                return;
+            }
+
             filteredData.forEach(row => {
                 let tr = document.createElement('tr');
-                tr.className = "border-b hover:bg-green-50 cursor-pointer";
+                tr.className = "border-b hover:bg-green-50 cursor-pointer transition";
                 tr.onclick = () => {
-                    document.getElementById('modalBody').innerHTML = Object.entries(row).map(([k,v]) => `<div class="mb-3 border-b pb-1"><b>${k}:</b> ${v}</div>`).join('');
+                    document.getElementById('modalBody').innerHTML = Object.entries(row).map(([k,v]) => `<div class="mb-3 border-b pb-1"><b>${k}:</b> ${v || '-'}</div>`).join('');
                     document.getElementById('sheetModal').classList.remove('hidden');
                 };
-                tr.innerHTML = displayHeaders.map(h => `<td class="p-4">${row[h]||'-'}</td>`).join('');
+                tr.innerHTML = displayHeaders.map(h => {
+                    let val = row[h] || '-';
+                    if (h === 'วงเงิน' && val !== '-') val = '฿ ' + parseFloat(val.replace(/,/g, '')).toLocaleString();
+                    return `<td class="p-4">${val}</td>`;
+                }).join('');
                 body.appendChild(tr);
             });
         }
@@ -140,8 +167,16 @@
             const kw = document.getElementById('searchInput').value.toLowerCase();
             const year = document.getElementById('yearFilter').value;
             const comm = document.getElementById('communityFilter').value;
-            filteredData = allData.filter(r => Object.values(r).some(v => v?.toLowerCase().includes(kw)) && (year==""||r["ปีงบ"]==year) && (comm==""||r["ชุมชน"]==comm));
-            renderTable(); updateSummaryCards(filteredData);
+            
+            filteredData = allData.filter(r => {
+                const matchKw = Object.values(r).some(v => v?.toLowerCase().includes(kw));
+                const matchYear = year === "" || String(r["ปีงบ"]) === year;
+                const matchComm = comm === "" || r["ชุมชน"] === comm;
+                return matchKw && matchYear && matchComm;
+            });
+            
+            renderTable(); 
+            updateSummaryCards(filteredData);
         }
 
         document.getElementById('searchInput').addEventListener('input', applyFilters);
