@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>จัดการข้อมูลยานพาหนะ - Admin</title>
+    <script>if (sessionStorage.getItem("portal_auth") !== "true") window.location.href = "index.html";</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -15,13 +16,13 @@
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
             <h1 class="text-2xl font-bold">⚙️ จัดการข้อมูลยานพาหนะ (Admin)</h1>
             <div class="flex gap-2">
-                <a href="index.html" class="bg-blue-900 border border-blue-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-800 transition">🏠 หน้าหลัก Portal</a>
+                <a href="vehicle.html" class="bg-blue-900 border border-blue-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-800 transition">◀ กลับหน้ารายงาน</a>
                 <button id="logoutBtn" class="bg-red-500 border border-red-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-600 transition">ออกจากระบบ</button>
             </div>
         </div>
     </nav>
 
-    <main id="appContent" class="container mx-auto px-6 py-10 max-w-6xl hidden">
+    <main id="appContent" class="container mx-auto px-6 py-10 max-w-6xl">
         <div class="bg-white p-8 rounded-xl shadow-md border-t-4 border-[#1e3a8a] mb-10">
             <h2 id="formTitle" class="text-2xl font-bold mb-6 text-[#1e3a8a]">เพิ่มข้อมูลยานพาหนะใหม่</h2>
             
@@ -83,42 +84,26 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
-        import { getDatabase, ref, push, set, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+        import { getDatabase, ref, push, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
-            authDomain: "suchartstudio-9a78d.firebaseapp.com",
             databaseURL: "https://suchartstudio-9a78d-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "suchartstudio-9a78d",
-            storageBucket: "suchartstudio-9a78d.firebasestorage.app",
-            messagingSenderId: "953369646185",
-            appId: "1:953369646185:web:9f2a9f8b7faf596a6ebef8"
+            projectId: "suchartstudio-9a78d"
         };
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
         const db = getDatabase(app);
 
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dk0ypev4m/image/upload";
         const UPLOAD_PRESET = "khonkaen_preset";
         let vehiclesData = {}; 
 
-        // ระบบ Auth Guard
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                const snapshot = await get(ref(db, 'users/' + user.uid));
-                if (snapshot.exists() && snapshot.val().role === 'admin') {
-                    document.getElementById('appContent').classList.remove('hidden');
-                    loadTableData();
-                } else {
-                    Swal.fire({title: 'ปฏิเสธการเข้าถึง', text: 'คุณไม่มีสิทธิ์เข้าถึงหน้าผู้ดูแลระบบ', icon: 'error'}).then(() => window.location.href = 'index.html');
-                }
-            } else window.location.href = 'login.html';
+        // ออกจากระบบ
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            sessionStorage.removeItem("portal_auth");
+            window.location.href = 'index.html';
         });
 
-        document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth).then(() => window.location.href = 'login.html'));
-
-        // สคริปต์เปิด/ปิดช่องกรอกชื่อหน่วยงาน
         window.toggleTransferInput = () => {
             const status = document.getElementById('status').value;
             const transferContainer = document.getElementById('transferContainer');
@@ -130,31 +115,31 @@
             }
         };
 
-        function loadTableData() {
-            onValue(ref(db, 'vehicles'), (snapshot) => {
-                const data = snapshot.val();
-                const tbody = document.getElementById('dataTableBody');
-                if (!data) { tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">ไม่มีข้อมูล</td></tr>'; return; }
-                vehiclesData = data;
-                tbody.innerHTML = '';
-                Object.entries(data).reverse().forEach(([id, v]) => {
-                    const statusText = v.status === 'โอนต่อให้' ? `โอนให้: ${v.transferTo || '-'}` : (v.status || 'ใช้งานปกติ');
-                    tbody.innerHTML += `
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="p-3">${v.imageUrl ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded">` : 'ไม่มีรูป'}</td>
-                            <td class="p-3 font-bold">${v.licensePlate || '-'}<br><span class="text-sm font-normal text-gray-500">รหัส: ${v.assetId}</span></td>
-                            <td class="p-3">${v.assetName || '-'}<br><span class="text-sm text-gray-500">${v.department}</span></td>
-                            <td class="p-3 text-blue-700 font-semibold">${statusText}</td>
-                            <td class="p-3 text-center">
-                                <button onclick="editVehicle('${id}')" class="bg-yellow-400 text-white px-3 py-1 rounded shadow">แก้ไข</button>
-                                <button onclick="deleteVehicle('${id}')" class="bg-red-500 text-white px-3 py-1 rounded shadow">ลบ</button>
-                            </td>
-                        </tr>
-                    `;
-                });
+        // โหลดข้อมูล
+        onValue(ref(db, 'vehicles'), (snapshot) => {
+            const data = snapshot.val();
+            const tbody = document.getElementById('dataTableBody');
+            if (!data) { tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">ไม่มีข้อมูล</td></tr>'; return; }
+            vehiclesData = data;
+            tbody.innerHTML = '';
+            Object.entries(data).reverse().forEach(([id, v]) => {
+                const statusText = v.status === 'โอนต่อให้' ? `โอนให้: ${v.transferTo || '-'}` : (v.status || 'ใช้งานปกติ');
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50">
+                        <td class="p-3">${v.imageUrl ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded">` : 'ไม่มีรูป'}</td>
+                        <td class="p-3 font-bold">${v.licensePlate || '-'}<br><span class="text-sm font-normal text-gray-500">รหัส: ${v.assetId}</span></td>
+                        <td class="p-3">${v.assetName || '-'}<br><span class="text-sm text-gray-500">${v.department}</span></td>
+                        <td class="p-3 text-blue-700 font-semibold">${statusText}</td>
+                        <td class="p-3 text-center">
+                            <button onclick="editVehicle('${id}')" class="bg-yellow-400 text-white px-3 py-1 rounded shadow mb-1">แก้ไข</button>
+                            <button onclick="deleteVehicle('${id}')" class="bg-red-500 text-white px-3 py-1 rounded shadow">ลบ</button>
+                        </td>
+                    </tr>
+                `;
             });
-        }
+        });
 
+        // บันทึก/แก้ไขข้อมูล
         document.getElementById('vehicleForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
@@ -178,8 +163,8 @@
                     licensePlate: document.getElementById('licensePlate').value,
                     taxExpiry: document.getElementById('taxExpiry').value,
                     responsiblePerson: document.getElementById('responsiblePerson').value,
-                    status: document.getElementById('status').value,          // รับค่าสถานะ
-                    transferTo: document.getElementById('transferTo').value,  // รับค่าหน่วยงานที่รับโอน
+                    status: document.getElementById('status').value,
+                    transferTo: document.getElementById('transferTo').value,
                     imageUrl: imageUrl
                 };
 
@@ -196,9 +181,26 @@
             finally { submitBtn.disabled = false; submitBtn.innerHTML = editingId ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล'; }
         });
 
+        // --- ระบบยืนยันรหัสผ่านก่อนลบ (878556) ---
         window.deleteVehicle = (id) => {
-            Swal.fire({title: 'ยืนยันการลบ?', icon: 'warning', showCancelButton: true}).then(async (res) => {
-                if (res.isConfirmed) await remove(ref(db, 'vehicles/' + id));
+            Swal.fire({
+                title: 'ยืนยันการลบข้อมูล?',
+                text: 'กรุณากรอกรหัสผ่าน 6 หลักเพื่อยืนยันสิทธิ์',
+                input: 'password',
+                inputAttributes: { autocapitalize: 'off', maxlength: 6 },
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยันลบข้อมูล',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#d33'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    if (result.value === '878556') {
+                        await remove(ref(db, 'vehicles/' + id));
+                        Swal.fire('ลบแล้ว!', 'ข้อมูลถูกลบออกจากระบบเรียบร้อย', 'success');
+                    } else {
+                        Swal.fire('รหัสผ่านไม่ถูกต้อง!', 'คุณไม่ได้รับสิทธิ์ในการลบข้อมูลนี้', 'error');
+                    }
+                }
             });
         };
 
@@ -213,8 +215,6 @@
             document.getElementById('licensePlate').value = v.licensePlate || '';
             document.getElementById('taxExpiry').value = v.taxExpiry || '';
             document.getElementById('responsiblePerson').value = v.responsiblePerson || '';
-            
-            // เซ็ตค่าสถานะ และเปิดปิดช่องให้ถูกต้อง
             document.getElementById('status').value = v.status || 'ใช้งานปกติ';
             document.getElementById('transferTo').value = v.transferTo || '';
             window.toggleTransferInput(); 
@@ -227,7 +227,7 @@
             document.getElementById('vehicleForm').reset();
             document.getElementById('editingId').value = '';
             document.getElementById('status').value = 'ใช้งานปกติ';
-            window.toggleTransferInput(); // รีเซ็ตการซ่อนช่อง
+            window.toggleTransferInput(); 
             document.getElementById('cancelEditBtn').classList.add('hidden');
         };
     </script>
