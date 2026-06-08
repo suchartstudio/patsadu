@@ -3,20 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบรายงานสถานะยานพาหนะ - เทศบาลนครขอนแก่น</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>ระบบจัดการยานพาหนะ - เทศบาลนครขอนแก่น</title>
     <script>if (sessionStorage.getItem("portal_auth") !== "true") window.location.href = "index.html";</script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚗</text></svg>">
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 1.125rem; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; }
+        
+        /* ตั้งค่าสำหรับระบบ Print ขาว-ดำ A4 แนวตั้ง */
         @media print {
-            body { background-color: white; font-size: 14pt !important; }
+            @page { size: A4 portrait; margin: 1cm; }
+            body { background-color: white !important; color: black !important; }
             #main-ui, nav, #vehicleModal { display: none !important; }
             #printArea { display: block !important; }
-            @page { size: A4 landscape; margin: 1.5cm; } /* ปรับเป็นแนวนอนเพราะคอลัมน์เยอะขึ้น */
-            table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-            th, td { border: 1px solid #999; padding: 8px; text-align: left; }
-            th { background-color: #e5e7eb !important; -webkit-print-color-adjust: exact; }
+            * { filter: grayscale(100%) !important; }
+            
+            table.print-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 15px; }
+            table.print-table th, table.print-table td { border: 1px solid #333 !important; padding: 6px 8px !important; text-align: left; }
+            table.print-table th { background-color: #f0f0f0 !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+            table.print-table td.text-center { text-align: center; }
         }
     </style>
 </head>
@@ -25,64 +32,89 @@
     <div id="printArea" class="hidden"></div>
 
     <div id="main-ui">
-        <nav class="bg-[#1e3a8a] text-white shadow-md">
-            <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-                <h1 class="text-2xl font-bold">📊 ระบบรายงานสถานะยานพาหนะ เทศบาลนครขอนแก่น</h1>
-                <div class="flex gap-3">
-                    <a href="index.html" class="bg-blue-900 border border-blue-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-800 transition">🏠 กลับหน้าหลัก</a>
-                    <a href="admin.html" class="bg-white text-[#1e3a8a] px-4 py-2 rounded-md font-semibold hover:bg-gray-200 transition">⚙️ จัดการข้อมูล</a>
+        <nav class="bg-gradient-to-r from-blue-900 to-[#1e3a8a] text-white shadow-md">
+            <div class="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <h1 class="text-2xl font-bold">🚗 ระบบจัดการยานพาหนะ เทศบาลนครขอนแก่น</h1>
+                <div class="flex gap-2">
+                    <a href="index.html" class="bg-blue-800 border border-blue-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-blue-700 transition shadow-sm">🏠 กลับหน้าหลัก</a>
+                    <a href="admin.html" class="bg-gray-100 text-gray-800 px-4 py-2 rounded-md font-semibold hover:bg-gray-200 transition shadow-sm border border-gray-300 flex items-center gap-2">
+                        ⚙️ จัดการข้อมูล (Admin)
+                    </a>
                 </div>
             </div>
         </nav>
 
         <main class="container mx-auto px-6 py-8 max-w-7xl">
-            <h2 class="text-xl font-bold text-gray-700 mb-4">สรุปจำนวนยานพาหนะ</h2>
-            <div id="summaryCards" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"></div>
-
-            <div class="bg-white rounded-xl shadow-md border-t-4 border-[#1e3a8a] overflow-hidden">
-                <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-col lg:flex-row gap-4 justify-between items-center">
-                    <div class="w-full lg:w-1/3 relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">🔍</span>
-                        <input type="text" id="searchInput" placeholder="ค้นหา: ทะเบียน, รหัส, ชื่อรถ, สถานะ..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a]">
-                    </div>
-                    
-                    <div class="w-full lg:w-2/3 flex flex-wrap gap-4 justify-end items-center">
-                        <select id="typeFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] bg-white">
-                            <option value="">-- ทุกประเภทรถ --</option>
-                        </select>
-                        <select id="statusFilter" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] bg-white">
-                            <option value="">-- ทุกสถานะ --</option>
-                            <option value="ใช้งานปกติ">ใช้งานปกติ</option>
-                            <option value="รอจำหน่าย">รอจำหน่าย</option>
-                            <option value="จำหน่ายแล้ว">จำหน่ายแล้ว</option>
-                            <option value="โอนต่อให้">โอนให้หน่วยงานอื่น</option>
-                        </select>
-                        <button onclick="printReport()" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow transition">🖨️ พิมพ์รายการนี้</button>
-                    </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                <div class="bg-gradient-to-r from-blue-800 to-blue-600 text-white p-6 rounded-xl shadow-md">
+                    <p class="text-blue-100 mb-1">ยอดรวมยานพาหนะในระบบ</p>
+                    <p class="text-4xl font-bold" id="sumTotal">0 <span class="text-lg font-normal">คัน</span></p>
                 </div>
+                <div class="bg-white border border-blue-100 p-6 rounded-xl shadow-sm">
+                    <p class="text-gray-500 font-semibold mb-1">สถานะ: ใช้งานปกติ</p>
+                    <p class="text-3xl font-bold text-green-600" id="sumActive">0 <span class="text-lg font-normal text-gray-500">คัน</span></p>
+                </div>
+                <div class="bg-white border border-blue-100 p-6 rounded-xl shadow-sm">
+                    <p class="text-gray-500 font-semibold mb-1">สถานะ: รอจำหน่าย / โอน</p>
+                    <p class="text-3xl font-bold text-orange-500" id="sumPending">0 <span class="text-lg font-normal text-gray-500">คัน</span></p>
+                </div>
+            </div>
 
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100 flex flex-col h-full">
+                    <h4 class="text-sm font-bold text-gray-500 mb-3 border-b pb-2 flex justify-between items-center">
+                        <span>🏢 จำนวนรถแยกตามหน่วยงาน (คลิกเพื่อกรอง)</span>
+                    </h4>
+                    <div id="deptBreakdown" class="flex flex-wrap gap-2 overflow-y-auto max-h-40 pr-2 pb-2"></div>
+                </div>
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-blue-100 flex flex-col h-full">
+                    <h4 class="text-sm font-bold text-gray-500 mb-3 border-b pb-2 flex justify-between items-center">
+                        <span>🚦 แยกตามสถานะ (คลิกเพื่อกรอง)</span>
+                    </h4>
+                    <div id="statusBreakdown" class="flex flex-wrap gap-2 overflow-y-auto max-h-40 pr-2 pb-2"></div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md border-t-4 border-blue-600 overflow-hidden" id="tableSection">
+                <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-wrap gap-4 items-center justify-between">
+                    <div class="flex flex-wrap gap-3 w-full xl:w-auto flex-1 items-center">
+                        <input type="text" id="searchInput" placeholder="🔍 ค้นหา รหัส / ทะเบียน / ชื่อรถ..." class="w-full md:w-1/4 p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none shadow-sm text-sm">
+                        <select id="deptFilter" class="w-full md:w-1/4 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกหน่วยงาน --</option></select>
+                        <select id="statusFilter" class="w-full md:w-1/4 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกสถานะ --</option></select>
+                        
+                        <button onclick="clearFilters()" class="bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm transition flex items-center gap-1">
+                            ❌ ล้างตัวกรอง
+                        </button>
+                    </div>
+                    <button onclick="printReport()" class="w-full xl:w-auto mt-4 xl:mt-0 bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 px-6 rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
+                        🖨️ พิมพ์รายงาน
+                    </button>
+                </div>
+                
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse min-w-[900px]">
+                    <table class="w-full text-left border-collapse min-w-[1000px]">
                         <thead>
-                            <tr class="bg-[#1e3a8a] text-white">
-                                <th class="p-4">รูปภาพ</th>
-                                <th class="p-4">ทะเบียนรถ / รหัส</th>
-                                <th class="p-4">ชื่อสินทรัพย์ / ประเภท</th>
-                                <th class="p-4">หน่วยงานที่ดูแล</th>
-                                <th class="p-4 text-center">สถานะ</th> <th class="p-4">วันต่อภาษี</th>
+                            <tr class="bg-blue-800 text-white">
+                                <th class="p-4 w-24 text-center">รูปภาพ</th>
+                                <th class="p-4 w-40">รหัส / ทะเบียน</th>
+                                <th class="p-4">ชื่อรถ / ชนิด</th>
+                                <th class="p-4 w-48">หน่วยงาน</th>
+                                <th class="p-4 w-40 text-center">ต่อภาษี</th>
+                                <th class="p-4 w-32 text-center">สถานะ</th>
                             </tr>
                         </thead>
                         <tbody id="dataTableBody">
-                            <tr><td colspan="6" class="p-8 text-center text-gray-500">กำลังโหลดข้อมูล...</td></tr>
+                            <tr><td colspan="6" class="p-8 text-center text-gray-500">⏳ กำลังโหลดข้อมูล...</td></tr>
                         </tbody>
                     </table>
                 </div>
 
-                <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-between items-center">
+                <div class="bg-gray-50 p-4 border-t flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="text-gray-600 font-medium" id="pageInfo">แสดงรายการที่ 0 ถึง 0</div>
                     <div class="flex gap-2">
-                        <button id="prevBtn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 disabled:opacity-50">◀ ก่อนหน้า</button>
-                        <button id="nextBtn" class="px-4 py-2 bg-[#1e3a8a] text-white rounded-lg hover:bg-blue-800 disabled:opacity-50">ถัดไป ▶</button>
+                        <button id="prevBtn" class="px-5 py-2 bg-white border rounded-lg hover:bg-gray-100 disabled:opacity-50 transition">◀ ก่อนหน้า</button>
+                        <button id="nextBtn" class="px-5 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 disabled:opacity-50 transition">ถัดไป ▶</button>
                     </div>
                 </div>
             </div>
@@ -90,14 +122,14 @@
     </div>
 
     <div id="vehicleModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-auto overflow-hidden transform scale-95 transition-transform" id="modalContent">
-            <div class="bg-[#1e3a8a] text-white p-5 flex justify-between items-center">
-                <h3 class="text-xl font-bold">📋 รายละเอียดข้อมูลยานพาหนะ</h3>
-                <button onclick="closeModal()" class="text-white hover:text-red-300 text-3xl leading-none">&times;</button>
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-auto overflow-hidden">
+            <div class="bg-blue-800 text-white p-5 flex justify-between items-center">
+                <h3 class="text-xl font-bold">📋 ข้อมูลยานพาหนะ</h3>
+                <button onclick="document.getElementById('vehicleModal').classList.add('hidden')" class="text-white hover:text-red-300 text-3xl leading-none">&times;</button>
             </div>
             <div class="p-6 md:p-8" id="modalBody"></div>
-            <div class="bg-gray-50 px-6 py-4 border-t border-gray-100 flex justify-end">
-                <button onclick="closeModal()" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold transition">ปิดหน้าต่าง</button>
+            <div class="bg-gray-50 px-6 py-4 border-t flex justify-end">
+                <button onclick="document.getElementById('vehicleModal').classList.add('hidden')" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold transition">ปิดหน้าต่าง</button>
             </div>
         </div>
     </div>
@@ -110,202 +142,282 @@
             apiKey: "AIzaSyDMptdLpLEdbeVFKZj82M0gyoV2m_2y5Pk",
             authDomain: "suchartstudio-9a78d.firebaseapp.com",
             databaseURL: "https://suchartstudio-9a78d-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "suchartstudio-9a78d",
-            storageBucket: "suchartstudio-9a78d.firebasestorage.app"
+            projectId: "suchartstudio-9a78d"
         };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
         let allVehicles = [], filteredVehicles = [];
-        let currentPage = 1; const itemsPerPage = 50;
+        let currentPage = 1; const itemsPerPage = 30; // แสดงหน้าละ 30 คัน
+        let isFiltersPopulated = false;
 
         onValue(ref(db, 'vehicles'), (snapshot) => {
             const data = snapshot.val();
-            if (!data) { document.getElementById('dataTableBody').innerHTML = '<tr><td colspan="6" class="p-8 text-center text-red-500">ไม่พบข้อมูล</td></tr>'; return; }
+            allVehicles = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse() : [];
             
-            allVehicles = Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse();
-            updateSummaryCards(allVehicles);
-            populateFilterOptions(allVehicles);
+            if(!isFiltersPopulated && allVehicles.length > 0) {
+                populateFilters();
+                isFiltersPopulated = true;
+            }
             applyFilters();
         });
 
-        function updateSummaryCards(dataList) {
-            const typesCount = {};
-            dataList.forEach(v => { typesCount[v.subType || "ไม่ระบุ"] = (typesCount[v.subType || "ไม่ระบุ"] || 0) + 1; });
-            const sortedTypes = Object.entries(typesCount).sort((a, b) => b[1] - a[1]).slice(0, 7);
+        function populateFilters() {
+            const depts = new Set(allVehicles.map(v => v.department).filter(Boolean));
+            const statuses = new Set(allVehicles.map(v => v.status).filter(Boolean));
             
-            const cardsContainer = document.getElementById('summaryCards');
-            cardsContainer.innerHTML = `<div class="bg-gradient-to-r from-[#1e3a8a] to-blue-600 text-white p-5 rounded-xl"><h3 class="text-blue-100 font-semibold mb-1">ยอดรวมทั้งหมด</h3><p class="text-4xl font-bold">${dataList.length} <span class="text-lg font-normal">คัน</span></p></div>`;
-            const colors = ['bg-blue-50', 'bg-green-50', 'bg-orange-50', 'bg-purple-50', 'bg-pink-50', 'bg-teal-50', 'bg-gray-50'];
-            sortedTypes.forEach((item, index) => {
-                cardsContainer.innerHTML += `<div class="${colors[index % colors.length]} border border-gray-100 p-5 rounded-xl shadow-sm"><h3 class="text-gray-500 font-semibold mb-1 truncate">${item[0]}</h3><p class="text-3xl font-bold text-gray-800">${item[1]} <span class="text-sm font-normal">คัน</span></p></div>`;
-            });
+            const deptF = document.getElementById('deptFilter');
+            const statusF = document.getElementById('statusFilter');
+            
+            depts.forEach(d => deptF.innerHTML += `<option value="${d}">${d}</option>`);
+            statuses.forEach(s => statusF.innerHTML += `<option value="${s}">${s}</option>`);
         }
 
-        function populateFilterOptions(dataList) {
-            const types = new Set();
-            dataList.forEach(v => { if(v.subType) types.add(v.subType.trim()); });
-            const typeSelect = document.getElementById('typeFilter');
-            const currentType = typeSelect.value;
-            typeSelect.innerHTML = '<option value="">-- ทุกประเภทรถ --</option>';
-            Array.from(types).sort().forEach(t => typeSelect.innerHTML += `<option value="${t}">${t}</option>`);
-            typeSelect.value = currentType;
-        }
-
-        // ฟังก์ชันช่วยจัดการสีของสถานะรถ
-        function getStatusBadge(status, transferTo) {
-            const s = status || 'ใช้งานปกติ';
-            if (s === 'ใช้งานปกติ') return '<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">✅ ใช้งานปกติ</span>';
-            if (s === 'รอจำหน่าย') return '<span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold border border-yellow-200">⏳ รอจำหน่าย</span>';
-            if (s === 'จำหน่ายแล้ว') return '<span class="bg-gray-200 text-gray-600 px-3 py-1 rounded-full text-xs font-bold border border-gray-300">❌ จำหน่ายแล้ว</span>';
-            if (s === 'โอนต่อให้') return `<span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-bold border border-blue-200">🔄 โอนให้:<br><span class="font-normal mt-1 block">${transferTo || 'ไม่ระบุ'}</span></span>`;
-            return `<span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold">✅ ใช้งานปกติ</span>`;
-        }
-
-        function applyFilters() {
-            const keyword = document.getElementById('searchInput').value.toLowerCase().trim();
-            const typeFilter = document.getElementById('typeFilter').value;
-            const statusFilter = document.getElementById('statusFilter').value;
-
+        window.applyFilters = () => {
+            const kw = document.getElementById('searchInput').value.toLowerCase();
+            const dept = document.getElementById('deptFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            
             filteredVehicles = allVehicles.filter(v => {
-                const textToSearch = `${v.licensePlate || ''} ${v.assetId || ''} ${v.assetName || ''} ${v.status || ''} ${v.transferTo || ''}`.toLowerCase();
-                const matchKeyword = textToSearch.includes(keyword);
-                const matchType = (typeFilter === "") || (v.subType === typeFilter);
-                
-                // กรองสถานะ (รถเก่าที่ไม่มี status ให้ถือว่าเป็น "ใช้งานปกติ")
-                const vStatus = v.status || 'ใช้งานปกติ';
-                const matchStatus = (statusFilter === "") || (vStatus === statusFilter);
-
-                return matchKeyword && matchType && matchStatus;
+                const matchKw = `${v.assetId} ${v.licensePlate} ${v.assetName}`.toLowerCase().includes(kw);
+                const matchDept = dept === '' || v.department === dept;
+                const matchStatus = status === '' || v.status === status;
+                return matchKw && matchDept && matchStatus;
             });
-            currentPage = 1; renderTable();
+            
+            currentPage = 1; // รีเซ็ตหน้ากลับไปที่ 1 เสมอเมื่อมีการกรอง
+            renderTable();
+            updateSummaryCards(filteredVehicles);
+        };
+
+        window.clearFilters = () => {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('deptFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            applyFilters();
+        };
+
+        window.setFilterFromBadge = (type, value) => {
+            if (value === 'ไม่ระบุ') return; 
+            if (type === 'dept') document.getElementById('deptFilter').value = value;
+            if (type === 'status') document.getElementById('statusFilter').value = value;
+            applyFilters();
+            document.getElementById('tableSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('deptFilter').addEventListener('change', applyFilters);
+        document.getElementById('statusFilter').addEventListener('change', applyFilters);
+
+        function updateSummaryCards(dataList) {
+            let activeCount = 0;
+            let pendingCount = 0;
+            let deptCounts = {}, statusCounts = {};
+            
+            dataList.forEach(v => { 
+                if (v.status === 'ใช้งานปกติ') activeCount++;
+                if (v.status === 'รอจำหน่าย' || v.status === 'โอนต่อให้') pendingCount++;
+
+                let dept = (v.department || '').trim() || 'ไม่ระบุ';
+                let status = (v.status || '').trim() || 'ไม่ระบุ';
+                deptCounts[dept] = (deptCounts[dept] || 0) + 1; 
+                statusCounts[status] = (statusCounts[status] || 0) + 1; 
+            });
+
+            let sortedDepts = Object.entries(deptCounts).sort((a,b) => b[1] - a[1]);
+            let sortedStatuses = Object.entries(statusCounts).sort((a,b) => b[1] - a[1]);
+            
+            document.getElementById('sumTotal').innerText = `${dataList.length.toLocaleString()} คัน`;
+            document.getElementById('sumActive').innerText = `${activeCount.toLocaleString()} คัน`;
+            document.getElementById('sumPending').innerText = `${pendingCount.toLocaleString()} คัน`;
+
+            const deptHtml = sortedDepts.map(d => `
+                <div onclick="setFilterFromBadge('dept', '${d[0]}')" class="${d[0] !== 'ไม่ระบุ' ? 'cursor-pointer hover:bg-blue-100 hover:border-blue-300' : ''} transition bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
+                    <span class="font-medium truncate max-w-[150px]" title="${d[0]}">${d[0]}</span>
+                    <span class="bg-white px-2 py-0.5 rounded-full text-xs font-bold text-blue-600 shadow-sm">${d[1]}</span>
+                </div>
+            `).join('');
+            document.getElementById('deptBreakdown').innerHTML = deptHtml || '<span class="text-gray-400 text-sm">ไม่มีข้อมูล</span>';
+
+            const statusHtml = sortedStatuses.map(s => {
+                let colorClass = s[0] === 'ใช้งานปกติ' ? 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100' : 'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100';
+                let textClass = s[0] === 'ใช้งานปกติ' ? 'text-green-600' : 'text-orange-600';
+                return `
+                <div onclick="setFilterFromBadge('status', '${s[0]}')" class="${s[0] !== 'ไม่ระบุ' ? `cursor-pointer ${colorClass}` : ''} transition border px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
+                    <span class="font-medium truncate max-w-[150px]" title="${s[0]}">${s[0]}</span>
+                    <span class="bg-white px-2 py-0.5 rounded-full text-xs font-bold ${textClass} shadow-sm">${s[1]}</span>
+                </div>
+            `}).join('');
+            document.getElementById('statusBreakdown').innerHTML = statusHtml || '<span class="text-gray-400 text-sm">ไม่มีข้อมูล</span>';
         }
 
-        function renderTable() {
-            const tbody = document.getElementById('dataTableBody'); tbody.innerHTML = '';
-            const totalItems = filteredVehicles.length;
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
-            const paginatedData = filteredVehicles.slice(startIndex, endIndex);
+        // โค้ดที่แก้ไขปุ่มหน้าถัดไปทำงานอย่างสมบูรณ์
+        window.renderTable = () => {
+            const tbody = document.getElementById('dataTableBody'); 
+            tbody.innerHTML = '';
+            
+            const total = filteredVehicles.length;
+            
+            if(total === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">ไม่พบข้อมูลที่ค้นหา</td></tr>`;
+                document.getElementById('pageInfo').innerText = `แสดงรายการที่ 0 ถึง 0`;
+                document.getElementById('prevBtn').disabled = true;
+                document.getElementById('nextBtn').disabled = true;
+                return;
+            }
 
-            if (paginatedData.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-gray-500">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</td></tr>'; return;}
-
-            paginatedData.forEach(v => {
-                const tr = document.createElement('tr');
-                tr.className = "border-b hover:bg-blue-50 transition cursor-pointer";
-                tr.onclick = () => window.showModal(v.id);
+            const start = (currentPage - 1) * itemsPerPage;
+            const end = Math.min(start + itemsPerPage, total);
+            const paginated = filteredVehicles.slice(start, end);
+            
+            paginated.forEach(v => {
+                let tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-blue-50 cursor-pointer group transition";
+                tr.onclick = () => showModal(v.id);
                 
-                const imgCell = v.imageUrl ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md shadow-sm border">` : '<div class="w-16 h-16 bg-gray-100 rounded-md flex items-center justify-center text-xs text-gray-400">ไม่มีรูป</div>';
-                
-                let dateColor = "text-gray-700";
-                if(v.taxExpiry) {
-                    const diffDays = Math.ceil((new Date(v.taxExpiry) - new Date()) / (1000 * 60 * 60 * 24));
-                    if(diffDays < 0) dateColor = "text-red-600 font-bold bg-red-100 px-2 py-1 rounded";
-                    else if (diffDays <= 30) dateColor = "text-orange-600 font-bold bg-orange-100 px-2 py-1 rounded";
-                }
-
-                // นำป้ายสถานะมาใส่ในคอลัมน์
-                const statusBadge = getStatusBadge(v.status, v.transferTo);
+                // คำนวณสีของสถานะ
+                let statusBadge = '';
+                if(v.status === 'ใช้งานปกติ') statusBadge = `<span class="px-2 py-1 bg-green-100 text-green-800 rounded-lg text-sm border border-green-200 font-medium whitespace-nowrap">${v.status}</span>`;
+                else if(v.status === 'รอจำหน่าย') statusBadge = `<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded-lg text-sm border border-orange-200 font-medium whitespace-nowrap">${v.status}</span>`;
+                else if(v.status === 'จำหน่ายแล้ว') statusBadge = `<span class="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm border border-gray-300 font-medium whitespace-nowrap">${v.status}</span>`;
+                else if(v.status === 'โอนต่อให้') statusBadge = `<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-lg text-sm border border-purple-200 font-medium whitespace-nowrap">โอนให้: ${v.transferTo || '-'}</span>`;
+                else statusBadge = `<span class="px-2 py-1 bg-gray-100 rounded-lg text-sm border font-medium whitespace-nowrap">${v.status || '-'}</span>`;
 
                 tr.innerHTML = `
-                    <td class="p-4">${imgCell}</td>
-                    <td class="p-4"><div class="font-bold text-lg">${v.licensePlate || '-'}</div><div class="text-sm text-gray-500 mt-1">ID: ${v.assetId || '-'}</div></td>
-                    <td class="p-4"><div class="font-semibold text-[#1e3a8a]">${v.assetName || '-'}</div><div class="text-sm text-blue-600 bg-blue-100 inline-block px-2 py-0.5 rounded mt-1">${v.subType || '-'}</div></td>
-                    <td class="p-4 font-medium">${v.department || '-'}</td>
-                    <td class="p-4 text-center leading-relaxed">${statusBadge}</td>
-                    <td class="p-4"><span class="${dateColor}">${v.taxExpiry || '-'}</span></td>
+                    <td class="p-3 text-center">
+                        ${v.imageUrl ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md border shadow-sm mx-auto">` : `<div class="w-16 h-16 bg-gray-100 rounded-md border flex items-center justify-center text-gray-400 text-xs mx-auto">ไม่มีรูป</div>`}
+                    </td>
+                    <td class="p-4">
+                        <div class="font-bold text-blue-800 text-lg">${v.licensePlate || '-'}</div>
+                        <div class="text-sm font-mono text-gray-500 mt-1">${v.assetId || '-'}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="font-bold text-gray-800">${v.assetName || '-'}</div>
+                        <div class="text-sm text-gray-500 mt-1">${v.subType || '-'}</div>
+                    </td>
+                    <td class="p-4">
+                        <div class="text-blue-700 font-semibold mb-1">🏢 ${v.department || '-'}</div>
+                        <div class="text-sm text-gray-500">👤 ${v.responsiblePerson || 'ไม่ระบุผู้รับผิดชอบ'}</div>
+                    </td>
+                    <td class="p-4 text-center">
+                        <div class="text-red-600 font-semibold text-sm">${v.taxExpiry || '-'}</div>
+                    </td>
+                    <td class="p-4 text-center">${statusBadge}</td>
                 `;
                 tbody.appendChild(tr);
             });
-
-            document.getElementById('pageInfo').innerText = `แสดงรายการที่ ${startIndex + 1} ถึง ${endIndex} จากทั้งหมด ${totalItems} รายการ`;
+            
+            document.getElementById('pageInfo').innerText = `แสดงรายการที่ ${start + 1} ถึง ${end} จากทั้งหมด ${total} รายการ`;
+            
+            // ป้องกันการกดเลยหน้าที่มี
+            const totalPages = Math.ceil(total / itemsPerPage);
             document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage >= Math.ceil(totalItems / itemsPerPage) || 1;
-        }
+            document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+        };
+
+        // Event Listener สำหรับปุ่มเปลี่ยนหน้า
+        document.getElementById('prevBtn').addEventListener('click', () => { 
+            if(currentPage > 1) { 
+                currentPage--; 
+                renderTable(); 
+            }
+        });
+
+        document.getElementById('nextBtn').addEventListener('click', () => { 
+            const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
+            if(currentPage < totalPages) { 
+                currentPage++; 
+                renderTable(); 
+            }
+        });
 
         window.showModal = (id) => {
             const v = allVehicles.find(x => x.id === id);
-            const modalBody = document.getElementById('modalBody');
-            const imgDisplay = v.imageUrl ? `<img src="${v.imageUrl}" class="w-full max-w-[250px] rounded-xl shadow-lg">` : `<div class="w-full max-w-[250px] h-48 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">ไม่มีรูปภาพ</div>`;
-
-            let dateDisplay = '<span class="text-gray-500">-</span>';
-            if(v.taxExpiry) {
-                const diffDays = Math.ceil((new Date(v.taxExpiry) - new Date()) / (1000 * 60 * 60 * 24));
-                if(diffDays < 0) dateDisplay = `<span class="text-red-600 font-bold">หมดอายุเมื่อ ${v.taxExpiry}</span>`;
-                else if (diffDays <= 30) dateDisplay = `<span class="text-orange-600 font-bold">ใกล้ครบกำหนด ${v.taxExpiry}</span>`;
-                else dateDisplay = `<span class="text-green-700 font-bold">ครบกำหนด ${v.taxExpiry}</span>`;
-            }
-
-            const statusBadge = getStatusBadge(v.status, v.transferTo);
-
-            modalBody.innerHTML = `
-                <div class="flex flex-col md:flex-row gap-8">
-                    <div class="md:w-1/3 flex justify-center items-start">${imgDisplay}</div>
-                    <div class="md:w-2/3 grid grid-cols-2 gap-y-6 gap-x-4">
-                        <div class="col-span-2 flex justify-between items-center border-b pb-4">
-                            <div>
-                                <p class="text-sm text-gray-500 font-semibold mb-1">หมายเลขทะเบียนรถ</p>
-                                <p class="font-bold text-3xl text-[#1e3a8a]">${v.licensePlate || 'ไม่มีทะเบียน'}</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-sm text-gray-500 font-semibold mb-2">สถานะปัจจุบัน</p>
-                                ${statusBadge}
-                            </div>
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="w-full md:w-1/3 flex justify-center items-start">
+                        ${v.imageUrl ? `<img src="${v.imageUrl}" class="w-full max-w-[250px] object-cover rounded-xl shadow-md border-4 border-gray-100">` : `<div class="w-full h-48 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">ไม่มีรูปภาพประกอบ</div>`}
+                    </div>
+                    <div class="w-full md:w-2/3 space-y-4">
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                            <h4 class="text-2xl font-bold text-blue-800 mb-1">${v.licensePlate || '-'}</h4>
+                            <p class="text-gray-600 font-semibold">${v.assetName || '-'}</p>
                         </div>
-                        <div class="col-span-2">
-                            <p class="text-sm text-gray-500 font-semibold mb-1">ชื่อสินทรัพย์</p>
-                            <p class="font-semibold text-gray-800 text-lg">${v.assetName || '-'}</p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><p class="text-sm text-gray-500 mb-1">รหัสสินทรัพย์</p><p class="font-mono font-semibold">${v.assetId || '-'}</p></div>
+                            <div><p class="text-sm text-gray-500 mb-1">ชนิดรถ</p><p class="font-medium">${v.subType || '-'}</p></div>
+                            <div><p class="text-sm text-gray-500 mb-1">หน่วยงานที่ดูแล</p><p class="font-bold text-blue-700">${v.department || '-'}</p></div>
+                            <div><p class="text-sm text-gray-500 mb-1">ผู้รับผิดชอบ</p><p class="font-medium">${v.responsiblePerson || '-'}</p></div>
+                            <div><p class="text-sm text-gray-500 mb-1">วันต่อภาษี</p><p class="font-bold text-red-600">${v.taxExpiry || '-'}</p></div>
+                            <div><p class="text-sm text-gray-500 mb-1">สถานะ</p><p class="font-bold">${v.status || '-'}</p></div>
+                            ${v.status === 'โอนต่อให้' ? `<div class="col-span-2"><p class="text-sm text-gray-500 mb-1">โอนต่อให้หน่วยงาน</p><p class="font-bold text-purple-700">${v.transferTo || '-'}</p></div>` : ''}
                         </div>
-                        <div><p class="text-sm text-gray-500 font-semibold mb-1">รหัสสินทรัพย์</p><p class="text-gray-800 font-mono">${v.assetId || '-'}</p></div>
-                        <div><p class="text-sm text-gray-500 font-semibold mb-1">ประเภทรถ</p><p class="text-blue-700 font-medium">${v.subType || '-'}</p></div>
-                        <div><p class="text-sm text-gray-500 font-semibold mb-1">หน่วยงานที่ดูแล</p><p class="text-gray-800">${v.department || '-'}</p></div>
-                        <div><p class="text-sm text-gray-500 font-semibold mb-1">วันต่อภาษีประจำปี</p><p>${dateDisplay}</p></div>
-                        <div class="col-span-2"><p class="text-sm text-gray-500 font-semibold mb-1">ผู้รับผิดชอบ</p><p class="text-gray-800">${v.responsiblePerson || '-'}</p></div>
                     </div>
                 </div>
             `;
             document.getElementById('vehicleModal').classList.remove('hidden');
-            setTimeout(() => document.getElementById('modalContent').classList.remove('scale-95'), 10);
         };
 
-        window.closeModal = () => {
-            document.getElementById('modalContent').classList.add('scale-95');
-            setTimeout(() => document.getElementById('vehicleModal').classList.add('hidden'), 200);
-        };
-
+        // ระบบพิมพ์รายงาน
         window.printReport = () => {
+            if (filteredVehicles.length === 0) {
+                Swal.fire('ไม่มีข้อมูล', 'โปรดเลือกข้อมูลเพื่อพิมพ์รายงาน', 'warning');
+                return;
+            }
+
             const printArea = document.getElementById('printArea');
+            const searchKw = document.getElementById('searchInput').value.trim();
+            const dept = document.getElementById('deptFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            
+            let filterTexts = [];
+            if (searchKw) filterTexts.push(`ค้นหา: "${searchKw}"`);
+            if (dept) filterTexts.push(`หน่วยงาน: ${dept}`);
+            if (status) filterTexts.push(`สถานะ: ${status}`);
+            
+            const filterDisplay = filterTexts.length > 0 ? `<b>เงื่อนไข:</b> ${filterTexts.join(' | ')}` : `<b>เงื่อนไข:</b> ข้อมูลยานพาหนะทั้งหมด`;
+
             let html = `
                 <div style="text-align: center; margin-bottom: 20px;">
-                    <h2 style="font-size: 24pt;">รายงานสถานะยานพาหนะ เทศบาลนครขอนแก่น</h2>
-                    <p style="font-size: 14pt; color: #555;">ยอดรวม: ${filteredVehicles.length} คัน</p>
+                    <h2 style="font-size: 16pt; font-weight: bold; margin-bottom: 5px;">รายงานทะเบียนยานพาหนะ</h2>
+                    <h3 style="font-size: 14pt; margin-bottom: 10px;">เทศบาลนครขอนแก่น</h3>
+                    <div style="font-size: 11pt; border-bottom: 1px dashed #666; padding-bottom: 10px; margin: 0 auto 15px auto; max-width: 90%;">
+                        <p style="margin: 0; color: #333;">${filterDisplay}</p>
+                        <p style="margin: 0; margin-top: 4px;">สรุปจำนวน <b>${filteredVehicles.length.toLocaleString()}</b> คัน</p>
+                    </div>
                 </div>
-                <table>
-                    <thead><tr><th>ลำดับ</th><th>ทะเบียนรถ/รหัส</th><th>ชื่อ/ประเภทรถ</th><th>หน่วยงาน</th><th>สถานะ</th><th>วันต่อภาษี</th></tr></thead>
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;" class="text-center">ลำดับ</th>
+                            <th style="width: 20%;">รหัส / ทะเบียน</th>
+                            <th style="width: 30%;">ชื่อรถ / ชนิด</th>
+                            <th style="width: 20%;">หน่วยงาน / ผู้รับผิดชอบ</th>
+                            <th style="width: 15%;" class="text-center">ครบกำหนดภาษี</th>
+                            <th style="width: 10%;" class="text-center">สถานะ</th>
+                        </tr>
+                    </thead>
                     <tbody>
             `;
-            filteredVehicles.forEach((v, idx) => {
-                const s = v.status || 'ใช้งานปกติ';
-                const statusTxt = s === 'โอนต่อให้' ? `โอนให้: ${v.transferTo || '-'}` : s;
-                html += `<tr>
-                    <td style="text-align:center">${idx + 1}</td>
-                    <td><b>${v.licensePlate || '-'}</b><br><small>${v.assetId}</small></td>
-                    <td>${v.assetName || '-'}<br><small>${v.subType || '-'}</small></td>
-                    <td>${v.department || '-'}</td>
-                    <td>${statusTxt}</td>
-                    <td>${v.taxExpiry || '-'}</td>
-                </tr>`;
+
+            filteredVehicles.forEach((v, index) => {
+                let printStatus = v.status === 'โอนต่อให้' ? `โอน: ${v.transferTo}` : (v.status || '-');
+                html += `
+                    <tr>
+                        <td class="text-center">${index + 1}</td>
+                        <td><b>${v.licensePlate || '-'}</b><br><span style="font-size: 9pt;">${v.assetId || '-'}</span></td>
+                        <td>${v.assetName || '-'}<br><span style="font-size: 9pt; color: #555;">${v.subType || '-'}</span></td>
+                        <td>${v.department || '-'}<br><span style="font-size: 9pt; color: #555;">${v.responsiblePerson || '-'}</span></td>
+                        <td class="text-center">${v.taxExpiry || '-'}</td>
+                        <td class="text-center">${printStatus}</td>
+                    </tr>
+                `;
             });
+
             html += `</tbody></table>`;
             printArea.innerHTML = html;
             window.print();
         };
-
-        document.getElementById('searchInput').addEventListener('input', applyFilters);
-        document.getElementById('typeFilter').addEventListener('change', applyFilters);
-        document.getElementById('statusFilter').addEventListener('change', applyFilters); // กรองสถานะได้
-        document.getElementById('prevBtn').addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderTable(); }});
-        document.getElementById('nextBtn').addEventListener('click', () => { if(currentPage < Math.ceil(filteredVehicles.length / itemsPerPage)) { currentPage++; renderTable(); }});
     </script>
 </body>
 </html>
