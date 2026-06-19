@@ -12,7 +12,6 @@
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 1.125rem; }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; }
         
-        /* ตั้งค่าสำหรับระบบ Print ขาว-ดำ A4 แนวตั้ง */
         @media print {
             @page { size: A4 portrait; margin: 1cm; }
             body { background-color: white !important; color: black !important; }
@@ -152,7 +151,13 @@
 
         onValue(ref(db, 'vehicles'), (snapshot) => {
             const data = snapshot.val();
-            allVehicles = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse() : [];
+            // แปลงข้อมูลที่หน่วยงานว่างหรือเป็น - ให้เป็นคำว่า "ส่วนกลาง"
+            allVehicles = data ? Object.entries(data).map(([id, val]) => {
+                let dept = (val.department || '').trim();
+                if (!dept || dept === '-') dept = 'ส่วนกลาง';
+                return { id, ...val, department: dept };
+            }).reverse() : [];
+            
             if(!isFiltersPopulated && allVehicles.length > 0) { populateFilters(); isFiltersPopulated = true; }
             applyFilters();
         });
@@ -208,7 +213,7 @@
             dataList.forEach(v => { 
                 if (v.status === 'ใช้งานปกติ') activeCount++;
                 if (v.status === 'รอจำหน่าย' || v.status === 'โอนต่อให้') pendingCount++;
-                let dept = (v.department || '').trim() || 'ไม่ระบุ';
+                let dept = v.department;
                 let status = (v.status || '').trim() || 'ไม่ระบุ';
                 deptCounts[dept] = (deptCounts[dept] || 0) + 1; 
                 statusCounts[status] = (statusCounts[status] || 0) + 1; 
@@ -221,8 +226,9 @@
             document.getElementById('sumActive').innerText = `${activeCount.toLocaleString()} คัน`;
             document.getElementById('sumPending').innerText = `${pendingCount.toLocaleString()} คัน`;
 
+            // ป้ายสามารถกดกรองคำว่า ส่วนกลาง ได้ปกติ
             document.getElementById('deptBreakdown').innerHTML = sortedDepts.map(d => `
-                <div onclick="setFilterFromBadge('dept', '${d[0]}')" class="${d[0] !== 'ไม่ระบุ' ? 'cursor-pointer hover:bg-blue-100 hover:border-blue-300' : ''} transition bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
+                <div onclick="setFilterFromBadge('dept', '${d[0]}')" class="cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
                     <span class="font-medium truncate max-w-[150px]">${d[0]}</span>
                     <span class="bg-white px-2 py-0.5 rounded-full text-xs font-bold text-blue-600 shadow-sm">${d[1]}</span>
                 </div>
@@ -267,7 +273,7 @@
                     <td class="p-3 text-center">${v.imageUrl ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md border mx-auto">` : `<div class="w-16 h-16 bg-gray-100 rounded-md border flex items-center justify-center text-gray-400 text-xs mx-auto">ไม่มีรูป</div>`}</td>
                     <td class="p-4"><div class="font-bold text-blue-800 text-lg">${v.licensePlate || '-'}</div><div class="text-sm font-mono text-gray-500 mt-1">${v.assetId || '-'}</div></td>
                     <td class="p-4"><div class="font-bold text-gray-800">${v.assetName || '-'}</div><div class="text-sm text-gray-500 mt-1">${v.subType || '-'}</div></td>
-                    <td class="p-4"><div class="text-blue-700 font-semibold mb-1">🏢 ${v.department || '-'}</div><div class="text-sm text-gray-500">👤 ${v.responsiblePerson || 'ไม่ระบุ'}</div></td>
+                    <td class="p-4"><div class="text-blue-700 font-semibold mb-1">🏢 ${v.department}</div><div class="text-sm text-gray-500">👤 ${v.responsiblePerson || 'ไม่ระบุ'}</div></td>
                     <td class="p-4 text-center"><div class="text-red-600 font-semibold text-sm">${v.taxExpiry || '-'}</div></td>
                     <td class="p-4 text-center">${statusBadge}</td>
                 `;
@@ -293,7 +299,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div><p class="text-sm text-gray-500 mb-1">รหัสสินทรัพย์</p><p class="font-mono font-semibold">${v.assetId || '-'}</p></div>
                             <div><p class="text-sm text-gray-500 mb-1">ชนิดรถ</p><p class="font-medium">${v.subType || '-'}</p></div>
-                            <div><p class="text-sm text-gray-500 mb-1">หน่วยงานที่ดูแล</p><p class="font-bold text-blue-700">${v.department || '-'}</p></div>
+                            <div><p class="text-sm text-gray-500 mb-1">หน่วยงานที่ดูแล</p><p class="font-bold text-blue-700">${v.department}</p></div>
                             <div><p class="text-sm text-gray-500 mb-1">ผู้รับผิดชอบ</p><p class="font-medium">${v.responsiblePerson || '-'}</p></div>
                             <div><p class="text-sm text-gray-500 mb-1">วันต่อภาษี</p><p class="font-bold text-red-600">${v.taxExpiry || '-'}</p></div>
                             <div><p class="text-sm text-gray-500 mb-1">สถานะ</p><p class="font-bold">${v.status || '-'}</p></div>
@@ -305,7 +311,6 @@
             document.getElementById('vehicleModal').classList.remove('hidden');
         };
 
-        // 🖨️ ระบบพิมพ์รายงาน (ปรับเพิ่ม รูปภาพรถยนต์ย่อยเรียบร้อย)
         window.printReport = () => {
             if (filteredVehicles.length === 0) { Swal.fire('ไม่มีข้อมูล', 'โปรดเลือกข้อมูลเพื่อพิมพ์รายงาน', 'warning'); return; }
             const printArea = document.getElementById('printArea');
@@ -332,7 +337,8 @@
                     <thead>
                         <tr>
                             <th style="width: 5%;" class="text-center">ลำดับ</th>
-                            <th style="width: 12%;" class="text-center">รูปภาพ</th> <th style="width: 18%;">รหัส / ทะเบียน</th>
+                            <th style="width: 12%;" class="text-center">รูปภาพ</th>
+                            <th style="width: 18%;">รหัส / ทะเบียน</th>
                             <th style="width: 25%;">ชื่อรถ / ชนิด</th>
                             <th style="width: 20%;">หน่วยงาน / ผู้รับผิดชอบ</th>
                             <th style="width: 12%;" class="text-center">ครบกำหนดภาษี</th>
@@ -344,7 +350,6 @@
 
             filteredVehicles.forEach((v, index) => {
                 let printStatus = v.status === 'โอนต่อให้' ? `โอน: ${v.transferTo}` : (v.status || '-');
-                // โค้ดแปลงและฝังภาพย่อยขนาดพอดีสำหรับพิมพ์ลงกระดาษ A4
                 let imgHtml = v.imageUrl ? `<img src="${v.imageUrl}" style="width: 60px; height: 45px; object-fit: cover; border: 1px solid #333; margin: 0 auto; display:block;">` : '<span style="font-size: 8pt; color:#666;">ไม่มีรูป</span>';
                 
                 html += `
@@ -353,7 +358,7 @@
                         <td class="text-center">${imgHtml}</td>
                         <td><b>${v.licensePlate || '-'}</b><br><span style="font-size: 9pt;">${v.assetId || '-'}</span></td>
                         <td>${v.assetName || '-'}<br><span style="font-size: 9pt; color: #555;">${v.subType || '-'}</span></td>
-                        <td>${v.department || '-'}<br><span style="font-size: 9pt; color: #555;">${v.responsiblePerson || '-'}</span></td>
+                        <td>${v.department}<br><span style="font-size: 9pt; color: #555;">${v.responsiblePerson || '-'}</span></td>
                         <td class="text-center">${v.taxExpiry || '-'}</td>
                         <td class="text-center">${printStatus}</td>
                     </tr>
