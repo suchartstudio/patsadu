@@ -145,7 +145,12 @@
                 return; 
             }
             
-            rawVehicles = Object.entries(data).map(([id, val]) => ({ id, ...val }));
+            // แปลงข้อมูลที่หน่วยงานว่างหรือเป็น - ให้เป็นคำว่า "ส่วนกลาง"
+            rawVehicles = Object.entries(data).map(([id, val]) => {
+                let dept = (val.department || '').trim();
+                if (!dept || dept === '-') dept = 'ส่วนกลาง';
+                return { id, ...val, department: dept };
+            });
             
             const depts = new Set(rawVehicles.map(v => v.department).filter(Boolean));
             const deptF = document.getElementById('adminDeptFilter');
@@ -192,12 +197,10 @@
         document.getElementById('adminStartDate').addEventListener('change', applyAdminFilters);
         document.getElementById('adminEndDate').addEventListener('change', applyAdminFilters);
 
-        // ⚡ ฟังก์ชันเรนเดอร์ตารางแอดมิน + ระบบจัดเรียง + แจ้งเตือนสี
         function renderAdminTable(dataList) {
             const tbody = document.getElementById('dataTableBody');
             if (dataList.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">ไม่พบผลการค้นหาที่ตรงกับเงื่อนไข</td></tr>'; return; }
             
-            // 1. เรียงข้อมูลตามวันต่อภาษีจากน้อยไปมาก (เก่าสุด/เกินกำหนด ขึ้นก่อน)
             dataList.sort((a, b) => {
                 let dateA = a.taxExpiry ? new Date(a.taxExpiry).getTime() : Infinity;
                 let dateB = b.taxExpiry ? new Date(b.taxExpiry).getTime() : Infinity;
@@ -206,39 +209,28 @@
 
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            
             const nextMonth = new Date(today);
             nextMonth.setMonth(today.getMonth() + 1);
 
             tbody.innerHTML = '';
             dataList.forEach((v) => {
                 let trClass = "border-b transition";
-                let plateColor = "text-blue-800"; // สีปกติสำหรับทะเบียน
-                let taxColor = "text-gray-600";   // สีปกติสำหรับวันที่
-                let taxNote = "";                 // ข้อความแจ้งเตือนสถานะ
+                let plateColor = "text-blue-800";
+                let taxColor = "text-gray-600";
+                let taxNote = "";
 
-                // 2. เช็คเงื่อนไขสี
                 if (v.taxExpiry) {
                     const expDate = new Date(v.taxExpiry);
                     if (expDate < today) {
-                        // เกินกำหนด = สีแดง + ไฮไลท์แดง
-                        plateColor = "text-red-600";
-                        taxColor = "text-red-600 font-bold";
+                        plateColor = "text-red-600"; taxColor = "text-red-600 font-bold";
                         taxNote = "<br><span class='text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded'>เกินกำหนด</span>";
                         trClass += " bg-red-50 hover:bg-red-100";
                     } else if (expDate <= nextMonth) {
-                        // ใกล้หมดอายุ 1 เดือน = สีส้ม + ไฮไลท์ส้ม
-                        plateColor = "text-orange-500";
-                        taxColor = "text-orange-500 font-bold";
+                        plateColor = "text-orange-500"; taxColor = "text-orange-500 font-bold";
                         taxNote = "<br><span class='text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded'>ใกล้หมดอายุ</span>";
                         trClass += " bg-orange-50 hover:bg-orange-100";
-                    } else {
-                        // ปกติ = hover สีเทา
-                        trClass += " hover:bg-gray-50";
-                    }
-                } else {
-                    trClass += " hover:bg-gray-50";
-                }
+                    } else { trClass += " hover:bg-gray-50"; }
+                } else { trClass += " hover:bg-gray-50"; }
 
                 const statusText = v.status === 'โอนต่อให้' ? `โอนให้: ${v.transferTo || '-'}` : (v.status || 'ใช้งานปกติ');
                 
@@ -253,7 +245,7 @@
                         </td>
                         <td class="p-3">
                             <div class="font-bold text-gray-800">${v.assetName || '-'}</div>
-                            <div class="text-sm text-gray-500">🏢 ${v.department || '-'}</div>
+                            <div class="text-sm text-gray-500">🏢 ${v.department}</div>
                         </td>
                         <td class="p-3 text-center">
                             <span class="${taxColor}">${v.taxExpiry || '-'}</span>${taxNote}
@@ -340,7 +332,10 @@
             document.getElementById('assetId').value = v.assetId || '';
             document.getElementById('assetName').value = v.assetName || '';
             document.getElementById('subType').value = v.subType || '';
-            document.getElementById('department').value = v.department || '';
+            
+            // ตอนกดแก้ไข จะดึงคำว่า "ส่วนกลาง" มาใส่ให้ในช่อง Form เพื่อให้เซฟเข้าไปในฐานข้อมูลด้วย
+            document.getElementById('department').value = v.department || ''; 
+            
             document.getElementById('licensePlate').value = v.licensePlate || '';
             document.getElementById('taxExpiry').value = v.taxExpiry || '';
             document.getElementById('responsiblePerson').value = v.responsiblePerson || '';
