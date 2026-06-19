@@ -22,7 +22,7 @@
             
             table.print-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 15px; }
             table.print-table th, table.print-table td { border: 1px solid #333 !important; padding: 6px 8px !important; text-align: left; }
-            table.print-table th { background-color: #f0f0f0 !important; font-weight: bold; -webkit-print-color-adjust: exact; }
+            table.print-table th { background-color: #f0f0f0 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             table.print-table td.text-center { text-align: center; }
         }
     </style>
@@ -82,7 +82,6 @@
                         <input type="text" id="searchInput" placeholder="🔍 ค้นหา รหัส / ทะเบียน / ชื่อรถ..." class="w-full md:w-1/4 p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none shadow-sm text-sm">
                         <select id="deptFilter" class="w-full md:w-1/4 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกหน่วยงาน --</option></select>
                         <select id="statusFilter" class="w-full md:w-1/4 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกสถานะ --</option></select>
-                        
                         <button onclick="clearFilters()" class="bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm transition flex items-center gap-1">
                             ❌ ล้างตัวกรอง
                         </button>
@@ -148,27 +147,21 @@
         const db = getDatabase(app);
 
         let allVehicles = [], filteredVehicles = [];
-        let currentPage = 1; const itemsPerPage = 30; // แสดงหน้าละ 30 คัน
+        let currentPage = 1; const itemsPerPage = 30;
         let isFiltersPopulated = false;
 
         onValue(ref(db, 'vehicles'), (snapshot) => {
             const data = snapshot.val();
             allVehicles = data ? Object.entries(data).map(([id, val]) => ({ id, ...val })).reverse() : [];
-            
-            if(!isFiltersPopulated && allVehicles.length > 0) {
-                populateFilters();
-                isFiltersPopulated = true;
-            }
+            if(!isFiltersPopulated && allVehicles.length > 0) { populateFilters(); isFiltersPopulated = true; }
             applyFilters();
         });
 
         function populateFilters() {
             const depts = new Set(allVehicles.map(v => v.department).filter(Boolean));
             const statuses = new Set(allVehicles.map(v => v.status).filter(Boolean));
-            
             const deptF = document.getElementById('deptFilter');
             const statusF = document.getElementById('statusFilter');
-            
             depts.forEach(d => deptF.innerHTML += `<option value="${d}">${d}</option>`);
             statuses.forEach(s => statusF.innerHTML += `<option value="${s}">${s}</option>`);
         }
@@ -184,8 +177,7 @@
                 const matchStatus = status === '' || v.status === status;
                 return matchKw && matchDept && matchStatus;
             });
-            
-            currentPage = 1; // รีเซ็ตหน้ากลับไปที่ 1 เสมอเมื่อมีการกรอง
+            currentPage = 1;
             renderTable();
             updateSummaryCards(filteredVehicles);
         };
@@ -210,14 +202,12 @@
         document.getElementById('statusFilter').addEventListener('change', applyFilters);
 
         function updateSummaryCards(dataList) {
-            let activeCount = 0;
-            let pendingCount = 0;
+            let activeCount = 0, pendingCount = 0;
             let deptCounts = {}, statusCounts = {};
             
             dataList.forEach(v => { 
                 if (v.status === 'ใช้งานปกติ') activeCount++;
                 if (v.status === 'รอจำหน่าย' || v.status === 'โอนต่อให้') pendingCount++;
-
                 let dept = (v.department || '').trim() || 'ไม่ระบุ';
                 let status = (v.status || '').trim() || 'ไม่ระบุ';
                 deptCounts[dept] = (deptCounts[dept] || 0) + 1; 
@@ -231,38 +221,31 @@
             document.getElementById('sumActive').innerText = `${activeCount.toLocaleString()} คัน`;
             document.getElementById('sumPending').innerText = `${pendingCount.toLocaleString()} คัน`;
 
-            const deptHtml = sortedDepts.map(d => `
+            document.getElementById('deptBreakdown').innerHTML = sortedDepts.map(d => `
                 <div onclick="setFilterFromBadge('dept', '${d[0]}')" class="${d[0] !== 'ไม่ระบุ' ? 'cursor-pointer hover:bg-blue-100 hover:border-blue-300' : ''} transition bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
-                    <span class="font-medium truncate max-w-[150px]" title="${d[0]}">${d[0]}</span>
+                    <span class="font-medium truncate max-w-[150px]">${d[0]}</span>
                     <span class="bg-white px-2 py-0.5 rounded-full text-xs font-bold text-blue-600 shadow-sm">${d[1]}</span>
                 </div>
-            `).join('');
-            document.getElementById('deptBreakdown').innerHTML = deptHtml || '<span class="text-gray-400 text-sm">ไม่มีข้อมูล</span>';
+            `).join('') || '<span class="text-gray-400 text-sm">ไม่มีข้อมูล</span>';
 
-            const statusHtml = sortedStatuses.map(s => {
+            document.getElementById('statusBreakdown').innerHTML = sortedStatuses.map(s => {
                 let colorClass = s[0] === 'ใช้งานปกติ' ? 'bg-green-50 text-green-800 border-green-200 hover:bg-green-100' : 'bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100';
                 let textClass = s[0] === 'ใช้งานปกติ' ? 'text-green-600' : 'text-orange-600';
                 return `
                 <div onclick="setFilterFromBadge('status', '${s[0]}')" class="${s[0] !== 'ไม่ระบุ' ? `cursor-pointer ${colorClass}` : ''} transition border px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
-                    <span class="font-medium truncate max-w-[150px]" title="${s[0]}">${s[0]}</span>
+                    <span class="font-medium truncate max-w-[150px]">${s[0]}</span>
                     <span class="bg-white px-2 py-0.5 rounded-full text-xs font-bold ${textClass} shadow-sm">${s[1]}</span>
                 </div>
-            `}).join('');
-            document.getElementById('statusBreakdown').innerHTML = statusHtml || '<span class="text-gray-400 text-sm">ไม่มีข้อมูล</span>';
+            `}).join('') || '<span class="text-gray-400 text-sm">ไม่มีข้อมูล</span>';
         }
 
-        // โค้ดที่แก้ไขปุ่มหน้าถัดไปทำงานอย่างสมบูรณ์
         window.renderTable = () => {
-            const tbody = document.getElementById('dataTableBody'); 
-            tbody.innerHTML = '';
-            
+            const tbody = document.getElementById('dataTableBody'); tbody.innerHTML = '';
             const total = filteredVehicles.length;
-            
             if(total === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">ไม่พบข้อมูลที่ค้นหา</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">ไม่พบข้อมูล</td></tr>`;
                 document.getElementById('pageInfo').innerText = `แสดงรายการที่ 0 ถึง 0`;
-                document.getElementById('prevBtn').disabled = true;
-                document.getElementById('nextBtn').disabled = true;
+                document.getElementById('prevBtn').disabled = true; document.getElementById('nextBtn').disabled = true;
                 return;
             }
 
@@ -272,77 +255,41 @@
             
             paginated.forEach(v => {
                 let tr = document.createElement('tr');
-                tr.className = "border-b hover:bg-blue-50 cursor-pointer group transition";
+                tr.className = "border-b hover:bg-blue-50 cursor-pointer transition";
                 tr.onclick = () => showModal(v.id);
                 
-                // คำนวณสีของสถานะ
-                let statusBadge = '';
-                if(v.status === 'ใช้งานปกติ') statusBadge = `<span class="px-2 py-1 bg-green-100 text-green-800 rounded-lg text-sm border border-green-200 font-medium whitespace-nowrap">${v.status}</span>`;
-                else if(v.status === 'รอจำหน่าย') statusBadge = `<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded-lg text-sm border border-orange-200 font-medium whitespace-nowrap">${v.status}</span>`;
-                else if(v.status === 'จำหน่ายแล้ว') statusBadge = `<span class="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm border border-gray-300 font-medium whitespace-nowrap">${v.status}</span>`;
-                else if(v.status === 'โอนต่อให้') statusBadge = `<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-lg text-sm border border-purple-200 font-medium whitespace-nowrap">โอนให้: ${v.transferTo || '-'}</span>`;
-                else statusBadge = `<span class="px-2 py-1 bg-gray-100 rounded-lg text-sm border font-medium whitespace-nowrap">${v.status || '-'}</span>`;
+                let statusBadge = v.status === 'ใช้งานปกติ' ? `<span class="px-2 py-1 bg-green-100 text-green-800 rounded-lg text-sm border border-green-200 font-medium">${v.status}</span>` :
+                                  v.status === 'รอจำหน่าย' ? `<span class="px-2 py-1 bg-orange-100 text-orange-800 rounded-lg text-sm border border-orange-200 font-medium">${v.status}</span>` :
+                                  v.status === 'จำหน่ายแล้ว' ? `<span class="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg text-sm border border-gray-300 font-medium">${v.status}</span>` :
+                                  `<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-lg text-sm border border-purple-200 font-medium">โอนให้: ${v.transferTo || '-'}</span>`;
 
                 tr.innerHTML = `
-                    <td class="p-3 text-center">
-                        ${v.imageUrl ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md border shadow-sm mx-auto">` : `<div class="w-16 h-16 bg-gray-100 rounded-md border flex items-center justify-center text-gray-400 text-xs mx-auto">ไม่มีรูป</div>`}
-                    </td>
-                    <td class="p-4">
-                        <div class="font-bold text-blue-800 text-lg">${v.licensePlate || '-'}</div>
-                        <div class="text-sm font-mono text-gray-500 mt-1">${v.assetId || '-'}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="font-bold text-gray-800">${v.assetName || '-'}</div>
-                        <div class="text-sm text-gray-500 mt-1">${v.subType || '-'}</div>
-                    </td>
-                    <td class="p-4">
-                        <div class="text-blue-700 font-semibold mb-1">🏢 ${v.department || '-'}</div>
-                        <div class="text-sm text-gray-500">👤 ${v.responsiblePerson || 'ไม่ระบุผู้รับผิดชอบ'}</div>
-                    </td>
-                    <td class="p-4 text-center">
-                        <div class="text-red-600 font-semibold text-sm">${v.taxExpiry || '-'}</div>
-                    </td>
+                    <td class="p-3 text-center">${v.imageUrl ? `<img src="${v.imageUrl}" class="w-16 h-16 object-cover rounded-md border mx-auto">` : `<div class="w-16 h-16 bg-gray-100 rounded-md border flex items-center justify-center text-gray-400 text-xs mx-auto">ไม่มีรูป</div>`}</td>
+                    <td class="p-4"><div class="font-bold text-blue-800 text-lg">${v.licensePlate || '-'}</div><div class="text-sm font-mono text-gray-500 mt-1">${v.assetId || '-'}</div></td>
+                    <td class="p-4"><div class="font-bold text-gray-800">${v.assetName || '-'}</div><div class="text-sm text-gray-500 mt-1">${v.subType || '-'}</div></td>
+                    <td class="p-4"><div class="text-blue-700 font-semibold mb-1">🏢 ${v.department || '-'}</div><div class="text-sm text-gray-500">👤 ${v.responsiblePerson || 'ไม่ระบุ'}</div></td>
+                    <td class="p-4 text-center"><div class="text-red-600 font-semibold text-sm">${v.taxExpiry || '-'}</div></td>
                     <td class="p-4 text-center">${statusBadge}</td>
                 `;
                 tbody.appendChild(tr);
             });
             
             document.getElementById('pageInfo').innerText = `แสดงรายการที่ ${start + 1} ถึง ${end} จากทั้งหมด ${total} รายการ`;
-            
-            // ป้องกันการกดเลยหน้าที่มี
             const totalPages = Math.ceil(total / itemsPerPage);
             document.getElementById('prevBtn').disabled = currentPage === 1;
             document.getElementById('nextBtn').disabled = currentPage >= totalPages;
         };
 
-        // Event Listener สำหรับปุ่มเปลี่ยนหน้า
-        document.getElementById('prevBtn').addEventListener('click', () => { 
-            if(currentPage > 1) { 
-                currentPage--; 
-                renderTable(); 
-            }
-        });
-
-        document.getElementById('nextBtn').addEventListener('click', () => { 
-            const totalPages = Math.ceil(filteredVehicles.length / itemsPerPage);
-            if(currentPage < totalPages) { 
-                currentPage++; 
-                renderTable(); 
-            }
-        });
+        document.getElementById('prevBtn').addEventListener('click', () => { if(currentPage > 1) { currentPage--; renderTable(); }});
+        document.getElementById('nextBtn').addEventListener('click', () => { if(currentPage < Math.ceil(filteredVehicles.length / itemsPerPage)) { currentPage++; renderTable(); }});
 
         window.showModal = (id) => {
             const v = allVehicles.find(x => x.id === id);
             document.getElementById('modalBody').innerHTML = `
                 <div class="flex flex-col md:flex-row gap-6">
-                    <div class="w-full md:w-1/3 flex justify-center items-start">
-                        ${v.imageUrl ? `<img src="${v.imageUrl}" class="w-full max-w-[250px] object-cover rounded-xl shadow-md border-4 border-gray-100">` : `<div class="w-full h-48 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">ไม่มีรูปภาพประกอบ</div>`}
-                    </div>
+                    <div class="w-full md:w-1/3 flex justify-center items-start">${v.imageUrl ? `<img src="${v.imageUrl}" class="w-full max-w-[250px] object-cover rounded-xl shadow-md border-4 border-gray-100">` : `<div class="w-full h-48 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">ไม่มีรูปภาพ</div>`}</div>
                     <div class="w-full md:w-2/3 space-y-4">
-                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                            <h4 class="text-2xl font-bold text-blue-800 mb-1">${v.licensePlate || '-'}</h4>
-                            <p class="text-gray-600 font-semibold">${v.assetName || '-'}</p>
-                        </div>
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100"><h4 class="text-2xl font-bold text-blue-800 mb-1">${v.licensePlate || '-'}</h4><p class="text-gray-600 font-semibold">${v.assetName || '-'}</p></div>
                         <div class="grid grid-cols-2 gap-4">
                             <div><p class="text-sm text-gray-500 mb-1">รหัสสินทรัพย์</p><p class="font-mono font-semibold">${v.assetId || '-'}</p></div>
                             <div><p class="text-sm text-gray-500 mb-1">ชนิดรถ</p><p class="font-medium">${v.subType || '-'}</p></div>
@@ -358,13 +305,9 @@
             document.getElementById('vehicleModal').classList.remove('hidden');
         };
 
-        // ระบบพิมพ์รายงาน
+        // 🖨️ ระบบพิมพ์รายงาน (ปรับเพิ่ม รูปภาพรถยนต์ย่อยเรียบร้อย)
         window.printReport = () => {
-            if (filteredVehicles.length === 0) {
-                Swal.fire('ไม่มีข้อมูล', 'โปรดเลือกข้อมูลเพื่อพิมพ์รายงาน', 'warning');
-                return;
-            }
-
+            if (filteredVehicles.length === 0) { Swal.fire('ไม่มีข้อมูล', 'โปรดเลือกข้อมูลเพื่อพิมพ์รายงาน', 'warning'); return; }
             const printArea = document.getElementById('printArea');
             const searchKw = document.getElementById('searchInput').value.trim();
             const dept = document.getElementById('deptFilter').value;
@@ -374,7 +317,6 @@
             if (searchKw) filterTexts.push(`ค้นหา: "${searchKw}"`);
             if (dept) filterTexts.push(`หน่วยงาน: ${dept}`);
             if (status) filterTexts.push(`สถานะ: ${status}`);
-            
             const filterDisplay = filterTexts.length > 0 ? `<b>เงื่อนไข:</b> ${filterTexts.join(' | ')}` : `<b>เงื่อนไข:</b> ข้อมูลยานพาหนะทั้งหมด`;
 
             let html = `
@@ -390,11 +332,11 @@
                     <thead>
                         <tr>
                             <th style="width: 5%;" class="text-center">ลำดับ</th>
-                            <th style="width: 20%;">รหัส / ทะเบียน</th>
-                            <th style="width: 30%;">ชื่อรถ / ชนิด</th>
+                            <th style="width: 12%;" class="text-center">รูปภาพ</th> <th style="width: 18%;">รหัส / ทะเบียน</th>
+                            <th style="width: 25%;">ชื่อรถ / ชนิด</th>
                             <th style="width: 20%;">หน่วยงาน / ผู้รับผิดชอบ</th>
-                            <th style="width: 15%;" class="text-center">ครบกำหนดภาษี</th>
-                            <th style="width: 10%;" class="text-center">สถานะ</th>
+                            <th style="width: 12%;" class="text-center">ครบกำหนดภาษี</th>
+                            <th style="width: 8%;" class="text-center">สถานะ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -402,9 +344,13 @@
 
             filteredVehicles.forEach((v, index) => {
                 let printStatus = v.status === 'โอนต่อให้' ? `โอน: ${v.transferTo}` : (v.status || '-');
+                // โค้ดแปลงและฝังภาพย่อยขนาดพอดีสำหรับพิมพ์ลงกระดาษ A4
+                let imgHtml = v.imageUrl ? `<img src="${v.imageUrl}" style="width: 60px; height: 45px; object-fit: cover; border: 1px solid #333; margin: 0 auto; display:block;">` : '<span style="font-size: 8pt; color:#666;">ไม่มีรูป</span>';
+                
                 html += `
                     <tr>
                         <td class="text-center">${index + 1}</td>
+                        <td class="text-center">${imgHtml}</td>
                         <td><b>${v.licensePlate || '-'}</b><br><span style="font-size: 9pt;">${v.assetId || '-'}</span></td>
                         <td>${v.assetName || '-'}<br><span style="font-size: 9pt; color: #555;">${v.subType || '-'}</span></td>
                         <td>${v.department || '-'}<br><span style="font-size: 9pt; color: #555;">${v.responsiblePerson || '-'}</span></td>
