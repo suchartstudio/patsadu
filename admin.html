@@ -23,6 +23,7 @@
     </nav>
 
     <main id="appContent" class="container mx-auto px-6 py-10 max-w-6xl">
+        
         <div class="bg-white p-8 rounded-xl shadow-md border-t-4 border-[#1e3a8a] mb-10">
             <h2 id="formTitle" class="text-2xl font-bold mb-6 text-[#1e3a8a]">เพิ่มข้อมูลยานพาหนะใหม่</h2>
             
@@ -31,10 +32,10 @@
                 <input type="hidden" id="oldImageUrl" value="">
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div><label class="block font-semibold mb-2">รหัสสินทรัพย์</label><input type="text" id="assetId" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none"></div>
-                    <div><label class="block font-semibold mb-2">ชื่อสินทรัพย์</label><input type="text" id="assetName" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none"></div>
-                    <div><label class="block font-semibold mb-2">ชนิดย่อยสินทรัพย์</label><input type="text" id="subType" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none"></div>
-                    <div><label class="block font-semibold mb-2">สถานที่ตั้ง (หน่วยงาน)</label><input type="text" id="department" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none"></div>
+                    <div><label class="block font-semibold mb-2">รหัสสินทรัพย์ *</label><input type="text" id="assetId" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none"></div>
+                    <div><label class="block font-semibold mb-2">ชื่อสินทรัพย์ *</label><input type="text" id="assetName" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none"></div>
+                    <div><label class="block font-semibold mb-2">ชนิดย่อยสินทรัพย์ *</label><input type="text" id="subType" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none"></div>
+                    <div><label class="block font-semibold mb-2">สถานที่ตั้ง (หน่วยงาน) *</label><input type="text" id="department" required class="w-full px-4 py-3 border rounded-lg bg-gray-50 focus:ring-2 focus:ring-blue-600 outline-none"></div>
                     <div><label class="block text-[#1e3a8a] font-semibold mb-2">หมายเลขทะเบียนรถ</label><input type="text" id="licensePlate" class="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-none"></div>
                     <div><label class="block text-red-600 font-semibold mb-2">วันครบกำหนดต่อภาษี</label><input type="date" id="taxExpiry" class="w-full px-4 py-3 border-2 border-red-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"></div>
                     <div><label class="block text-[#1e3a8a] font-semibold mb-2">ผู้รับผิดชอบ</label><input type="text" id="responsiblePerson" class="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-none"></div>
@@ -53,7 +54,7 @@
                         <input type="text" id="transferTo" class="w-full px-4 py-3 border-2 border-blue-200 rounded-lg focus:ring-2 focus:ring-[#1e3a8a] outline-none" placeholder="เช่น อบจ.ขอนแก่น">
                     </div>
 
-                    <div><label class="block text-[#1e3a8a] font-semibold mb-2">ภาพถ่ายตัวรถ <span class="text-sm font-normal text-gray-500">(ปล่อยว่างได้)</span></label><input type="file" id="vehicleImage" accept="image/*" class="w-full px-4 py-2 border-2 border-blue-200 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"></div>
+                    <div><label class="block text-[#1e3a8a] font-semibold mb-2">ภาพถ่ายตัวรถ</label><input type="file" id="vehicleImage" accept="image/*" class="w-full px-4 py-2 border-2 border-blue-200 rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"></div>
                 </div>
 
                 <div class="pt-6 flex gap-4">
@@ -65,6 +66,29 @@
 
         <div class="bg-white p-8 rounded-xl shadow-md">
             <h2 class="text-2xl font-bold mb-6 text-gray-800">📋 รายการยานพาหนะในระบบ</h2>
+            
+            <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-wrap gap-4 items-center mb-6 shadow-sm">
+                <div class="w-full md:w-1/4">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">🔍 ค้นหาคำสำคัญ</label>
+                    <input type="text" id="adminSearchInput" placeholder="รหัส / ทะเบียน / ชื่อรถ..." class="w-full p-2.5 border rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="w-full md:w-1/4">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">🏢 กรองตามหน่วยงาน</label>
+                    <select id="adminDeptFilter" class="w-full p-2.5 border rounded-lg bg-white text-sm outline-none focus:ring-2 focus:ring-blue-500"><option value="">-- ทุกหน่วยงาน --</option></select>
+                </div>
+                <div class="w-full md:w-1/5">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">📅 วันที่บันทึกเริ่มต้น</label>
+                    <input type="date" id="adminStartDate" class="w-full p-2.5 border rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="w-full md:w-1/5">
+                    <label class="block text-xs font-bold text-slate-600 mb-1">📅 วันที่บันทึกสิ้นสุด</label>
+                    <input type="date" id="adminEndDate" class="w-full p-2.5 border rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="w-full md:w-auto self-end">
+                    <button onclick="clearAdminFilters()" class="bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white px-3 py-2 rounded-lg text-xs font-bold transition">ล้างตัวกรอง</button>
+                </div>
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
@@ -76,7 +100,9 @@
                             <th class="p-3 text-center">จัดการ</th>
                         </tr>
                     </thead>
-                    <tbody id="dataTableBody"></tbody>
+                    <tbody id="dataTableBody">
+                        <tr><td colspan="5" class="p-4 text-center text-gray-500">⏳ กำลังโหลดข้อมูล...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -96,9 +122,9 @@
 
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dk0ypev4m/image/upload";
         const UPLOAD_PRESET = "khonkaen_preset";
-        let vehiclesData = {}; 
+        
+        let rawVehicles = []; // เก็บข้อมูลแบบดิบจาก Firebase เพื่อใช้ทำ Filter
 
-        // ออกจากระบบ
         document.getElementById('logoutBtn').addEventListener('click', () => {
             sessionStorage.removeItem("portal_auth");
             window.location.href = 'index.html';
@@ -106,23 +132,77 @@
 
         window.toggleTransferInput = () => {
             const status = document.getElementById('status').value;
-            const transferContainer = document.getElementById('transferContainer');
-            if(status === 'โอนต่อให้') {
-                transferContainer.classList.remove('hidden');
-            } else {
-                transferContainer.classList.add('hidden');
-                document.getElementById('transferTo').value = ''; 
-            }
+            document.getElementById('transferContainer').classList.toggle('hidden', status !== 'โอนต่อให้');
+            if(status !== 'โอนต่อให้') document.getElementById('transferTo').value = '';
         };
 
-        // โหลดข้อมูล
+        // โหลดข้อมูลและเติมออปชันตัวกรอง
         onValue(ref(db, 'vehicles'), (snapshot) => {
             const data = snapshot.val();
+            if (!data) { 
+                document.getElementById('dataTableBody').innerHTML = '<tr><td colspan="5" class="p-4 text-center">ไม่มีข้อมูล</td></tr>'; 
+                rawVehicles = [];
+                return; 
+            }
+            
+            rawVehicles = Object.entries(data).map(([id, val]) => ({ id, ...val }));
+            
+            // สกัดชื่อหน่วยงานทั้งหมดเพื่อเติมลงใน Dropdown Filter ฝั่ง Admin
+            const depts = new Set(rawVehicles.map(v => v.department).filter(Boolean));
+            const deptF = document.getElementById('adminDeptFilter');
+            deptF.innerHTML = '<option value="">-- ทุกหน่วยงาน --</option>';
+            depts.forEach(d => deptF.innerHTML += `<option value="${d}">${d}</option>`);
+
+            applyAdminFilters(); // เรียกใช้งาน Filter ทันทีหลังโหลด
+        });
+
+        // ⚡ ฟังก์ชันระบบกรองข้อมูลและช่วงเวลาฝั่งแอดมิน
+        window.applyAdminFilters = () => {
+            const kw = document.getElementById('adminSearchInput').value.toLowerCase();
+            const dept = document.getElementById('adminDeptFilter').value;
+            const start = document.getElementById('adminStartDate').value;
+            const end = document.getElementById('adminEndDate').value;
+
+            // ทำการกรองข้อมูลตามเงื่อนไขทั้ง 3 ชั้นพร้อมกัน
+            const filtered = rawVehicles.filter(v => {
+                const matchKw = `${v.assetId} ${v.licensePlate} ${v.assetName}`.toLowerCase().includes(kw);
+                const matchDept = dept === '' || v.department === dept;
+                
+                let matchDate = true;
+                if (v.createdAt) {
+                    const createdDate = v.createdAt.substring(0, 10); // ตัดสตริงเหลือเฉพาะ YYYY-MM-DD
+                    if (start && createdDate < start) matchDate = false;
+                    if (end && createdDate > end) matchDate = false;
+                } else if (start || end) {
+                    matchDate = false; // ถ้าข้อมูลเก่าไม่มีวันที่ระบุไว้ แต่ฝั่งแอดมินเลือกกรองช่วงเวลา ให้ข้ามไปก่อน
+                }
+                return matchKw && matchDept && matchDate;
+            });
+
+            renderAdminTable(filtered);
+        };
+
+        window.clearAdminFilters = () => {
+            document.getElementById('adminSearchInput').value = '';
+            document.getElementById('adminDeptFilter').value = '';
+            document.getElementById('adminStartDate').value = '';
+            document.getElementById('adminEndDate').value = '';
+            window.applyAdminFilters();
+        };
+
+        // ตรวจจับความเปลี่ยนแปลงบนเครื่องมือกรองฝั่งแอดมิน
+        document.getElementById('adminSearchInput').addEventListener('input', applyAdminFilters);
+        document.getElementById('adminDeptFilter').addEventListener('change', applyAdminFilters);
+        document.getElementById('adminStartDate').addEventListener('change', applyAdminFilters);
+        document.getElementById('adminEndDate').addEventListener('change', applyAdminFilters);
+
+        // ฟังก์ชันเรนเดอร์ตารางแอดมินจากข้อมูลที่ผ่านการกรองแล้ว
+        function renderAdminTable(dataList) {
             const tbody = document.getElementById('dataTableBody');
-            if (!data) { tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">ไม่มีข้อมูล</td></tr>'; return; }
-            vehiclesData = data;
+            if (dataList.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="p-4 text-center">ไม่พบผลการค้นหาที่ตรงกับเงื่อนไข</td></tr>'; return; }
+            
             tbody.innerHTML = '';
-            Object.entries(data).reverse().forEach(([id, v]) => {
+            dataList.reverse().forEach((v) => {
                 const statusText = v.status === 'โอนต่อให้' ? `โอนให้: ${v.transferTo || '-'}` : (v.status || 'ใช้งานปกติ');
                 tbody.innerHTML += `
                     <tr class="border-b hover:bg-gray-50">
@@ -131,15 +211,15 @@
                         <td class="p-3">${v.assetName || '-'}<br><span class="text-sm text-gray-500">${v.department}</span></td>
                         <td class="p-3 text-blue-700 font-semibold">${statusText}</td>
                         <td class="p-3 text-center">
-                            <button onclick="editVehicle('${id}')" class="bg-yellow-400 text-white px-3 py-1 rounded shadow mb-1">แก้ไข</button>
-                            <button onclick="deleteVehicle('${id}')" class="bg-red-500 text-white px-3 py-1 rounded shadow">ลบ</button>
+                            <button onclick="editVehicle('${v.id}')" class="bg-yellow-400 text-white px-3 py-1 rounded shadow mr-1 hover:bg-yellow-500 text-sm">แก้ไข</button>
+                            <button onclick="deleteVehicle('${v.id}')" class="bg-red-500 text-white px-3 py-1 rounded shadow hover:bg-red-600 text-sm">ลบ</button>
                         </td>
                     </tr>
                 `;
             });
-        });
+        }
 
-        // บันทึก/แก้ไขข้อมูล
+        // ระบบบันทึกข้อมูล
         document.getElementById('vehicleForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const submitBtn = document.getElementById('submitBtn');
@@ -172,16 +252,16 @@
                     await update(ref(db, 'vehicles/' + editingId), vehicleData);
                     Swal.fire({ title: 'สำเร็จ!', text: 'แก้ไขข้อมูลเรียบร้อย', icon: 'success' });
                 } else {
-                    vehicleData.createdAt = new Date().toISOString();
+                    vehicleData.createdAt = new Date().toISOString(); // เพิ่มบันทึกวันและเวลาสากลเพื่อใช้ในการกรองช่วงเวลา
                     await set(push(ref(db, 'vehicles')), vehicleData);
                     Swal.fire({ title: 'สำเร็จ!', text: 'เพิ่มข้อมูลเรียบร้อย', icon: 'success' });
                 }
                 window.cancelEdit();
             } catch (error) { Swal.fire('ผิดพลาด!', 'ไม่สามารถบันทึกได้', 'error'); } 
-            finally { submitBtn.disabled = false; submitBtn.innerHTML = editingId ? 'อัปเดตข้อมูล' : 'บันทึกข้อมูล'; }
+            finally { submitBtn.disabled = false; submitBtn.innerHTML = 'บันทึกข้อมูล'; }
         });
 
-        // --- ระบบยืนยันรหัสผ่านก่อนลบ (878556) ---
+        // ยืนยันรหัสผ่านเพื่อสิทธิ์ความปลอดภัยก่อนลบข้อมูล (878556)
         window.deleteVehicle = (id) => {
             Swal.fire({
                 title: 'ยืนยันการลบข้อมูล?',
@@ -205,7 +285,7 @@
         };
 
         window.editVehicle = (id) => {
-            const v = vehiclesData[id];
+            const v = rawVehicles.find(x => x.id === id);
             document.getElementById('editingId').value = id;
             document.getElementById('oldImageUrl').value = v.imageUrl || '';
             document.getElementById('assetId').value = v.assetId || '';
@@ -219,6 +299,7 @@
             document.getElementById('transferTo').value = v.transferTo || '';
             window.toggleTransferInput(); 
 
+            document.getElementById('formTitle').innerText = '✏️ แก้ไขข้อมูลยานพาหนะ';
             document.getElementById('cancelEditBtn').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
@@ -227,6 +308,7 @@
             document.getElementById('vehicleForm').reset();
             document.getElementById('editingId').value = '';
             document.getElementById('status').value = 'ใช้งานปกติ';
+            document.getElementById('formTitle').innerText = 'เพิ่มข้อมูลยานพาหนะใหม่';
             window.toggleTransferInput(); 
             document.getElementById('cancelEditBtn').classList.add('hidden');
         };
