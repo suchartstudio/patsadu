@@ -12,6 +12,7 @@
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 1.125rem; }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; }
         
+        /* ตั้งค่าสำหรับระบบ Print ขาว-ดำ A4 แนวตั้ง */
         @media print {
             @page { size: A4 portrait; margin: 1cm; }
             body { background-color: white !important; color: black !important; }
@@ -78,9 +79,27 @@
             <div class="bg-white rounded-xl shadow-md border-t-4 border-blue-600 overflow-hidden" id="tableSection">
                 <div class="bg-gray-50 p-6 border-b border-gray-200 flex flex-wrap gap-4 items-center justify-between">
                     <div class="flex flex-wrap gap-3 w-full xl:w-auto flex-1 items-center">
-                        <input type="text" id="searchInput" placeholder="🔍 ค้นหา รหัส / ทะเบียน / ชื่อรถ..." class="w-full md:w-1/4 p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none shadow-sm text-sm">
-                        <select id="deptFilter" class="w-full md:w-1/4 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกหน่วยงาน --</option></select>
-                        <select id="statusFilter" class="w-full md:w-1/4 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกสถานะ --</option></select>
+                        <input type="text" id="searchInput" placeholder="🔍 ค้นหา รหัส / ทะเบียน / ชื่อรถ..." class="w-full md:w-1/5 p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-600 outline-none shadow-sm text-sm">
+                        <select id="deptFilter" class="w-full md:w-1/5 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกหน่วยงาน --</option></select>
+                        <select id="statusFilter" class="w-full md:w-1/5 p-2.5 border rounded-lg bg-white outline-none shadow-sm text-sm"><option value="">-- ทุกสถานะ --</option></select>
+                        
+                        <select id="monthFilter" class="w-full md:w-1/5 p-2.5 border rounded-lg bg-white font-semibold text-blue-900 border-blue-200 outline-none shadow-sm text-sm">
+                            <option value="">-- ทุกเดือนที่ต่อภาษี --</option>
+                            <option value="next" selected>📅 เดือนหน้า (อัตโนมัติ)</option>
+                            <option value="1">มกราคม</option>
+                            <option value="2">กุมภาพันธ์</option>
+                            <option value="3">มีนาคม</option>
+                            <option value="4">เมษายน</option>
+                            <option value="5">พฤษภาคม</option>
+                            <option value="6">มิถุนายน</option>
+                            <option value="7">กรกฎาคม</option>
+                            <option value="8">สิงหาคม</option>
+                            <option value="9">กันยายน</option>
+                            <option value="10">ตุลาคม</option>
+                            <option value="11">พฤศจิกายน</option>
+                            <option value="12">ธันวาคม</option>
+                        </select>
+
                         <button onclick="clearFilters()" class="bg-red-50 text-red-600 border border-red-200 hover:bg-red-500 hover:text-white px-4 py-2.5 rounded-lg text-sm font-bold shadow-sm transition flex items-center gap-1">
                             ❌ ล้างตัวกรอง
                         </button>
@@ -151,7 +170,6 @@
 
         onValue(ref(db, 'vehicles'), (snapshot) => {
             const data = snapshot.val();
-            // แปลงข้อมูลที่หน่วยงานว่างหรือเป็น - ให้เป็นคำว่า "ส่วนกลาง"
             allVehicles = data ? Object.entries(data).map(([id, val]) => {
                 let dept = (val.department || '').trim();
                 if (!dept || dept === '-') dept = 'ส่วนกลาง';
@@ -175,12 +193,32 @@
             const kw = document.getElementById('searchInput').value.toLowerCase();
             const dept = document.getElementById('deptFilter').value;
             const status = document.getElementById('statusFilter').value;
+            const monthOpt = document.getElementById('monthFilter').value; // ค่าตัวกรองเดือน
             
             filteredVehicles = allVehicles.filter(v => {
                 const matchKw = `${v.assetId} ${v.licensePlate} ${v.assetName}`.toLowerCase().includes(kw);
                 const matchDept = dept === '' || v.department === dept;
                 const matchStatus = status === '' || v.status === status;
-                return matchKw && matchDept && matchStatus;
+                
+                // ⚡ ระบบคำนวณและกรองเงื่อนไขตามเดือน
+                let matchMonth = true;
+                if (monthOpt !== '') {
+                    if (v.taxExpiry && v.taxExpiry.includes('-')) {
+                        const expMonth = parseInt(v.taxExpiry.split('-')[1]); // ดึงเลขเดือนจาก YYYY-MM-DD
+                        
+                        if (monthOpt === 'next') {
+                            const today = new Date();
+                            const nextMonthTarget = (today.getMonth() + 1) % 12 + 1; // หาเลขเดือนถัดไป (1-12)
+                            matchMonth = (expMonth === nextMonthTarget);
+                        } else {
+                            matchMonth = (expMonth === parseInt(monthOpt));
+                        }
+                    } else {
+                        matchMonth = false; // ไม่มีระบุวันต่อภาษี ให้ปัดตกเมื่อเลือกกรองเดือน
+                    }
+                }
+                
+                return matchKw && matchDept && matchStatus && matchMonth;
             });
             currentPage = 1;
             renderTable();
@@ -191,6 +229,7 @@
             document.getElementById('searchInput').value = '';
             document.getElementById('deptFilter').value = '';
             document.getElementById('statusFilter').value = '';
+            document.getElementById('monthFilter').value = ''; // ล้างตัวกรองเดือน
             applyFilters();
         };
 
@@ -205,6 +244,7 @@
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('deptFilter').addEventListener('change', applyFilters);
         document.getElementById('statusFilter').addEventListener('change', applyFilters);
+        document.getElementById('monthFilter').addEventListener('change', applyFilters); // ตรวจจับการเปลี่ยนเดือน
 
         function updateSummaryCards(dataList) {
             let activeCount = 0, pendingCount = 0;
@@ -226,7 +266,6 @@
             document.getElementById('sumActive').innerText = `${activeCount.toLocaleString()} คัน`;
             document.getElementById('sumPending').innerText = `${pendingCount.toLocaleString()} คัน`;
 
-            // ป้ายสามารถกดกรองคำว่า ส่วนกลาง ได้ปกติ
             document.getElementById('deptBreakdown').innerHTML = sortedDepts.map(d => `
                 <div onclick="setFilterFromBadge('dept', '${d[0]}')" class="cursor-pointer hover:bg-blue-100 hover:border-blue-300 transition bg-blue-50 text-blue-800 border border-blue-200 px-3 py-1.5 rounded-md text-sm flex items-center gap-2">
                     <span class="font-medium truncate max-w-[150px]">${d[0]}</span>
@@ -249,7 +288,7 @@
             const tbody = document.getElementById('dataTableBody'); tbody.innerHTML = '';
             const total = filteredVehicles.length;
             if(total === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">ไม่พบข้อมูล</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>`;
                 document.getElementById('pageInfo').innerText = `แสดงรายการที่ 0 ถึง 0`;
                 document.getElementById('prevBtn').disabled = true; document.getElementById('nextBtn').disabled = true;
                 return;
@@ -311,18 +350,34 @@
             document.getElementById('vehicleModal').classList.remove('hidden');
         };
 
+        // 🖨️ ระบบพิมพ์รายงาน (แสดงชื่อเงื่อนไขเดือนที่เลือกในหัวข้อกระดาษอัตโนมัติ)
         window.printReport = () => {
             if (filteredVehicles.length === 0) { Swal.fire('ไม่มีข้อมูล', 'โปรดเลือกข้อมูลเพื่อพิมพ์รายงาน', 'warning'); return; }
             const printArea = document.getElementById('printArea');
             const searchKw = document.getElementById('searchInput').value.trim();
             const dept = document.getElementById('deptFilter').value;
             const status = document.getElementById('statusFilter').value;
+            const monthFilterVal = document.getElementById('monthFilter').value;
+            
+            const monthNames = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
             
             let filterTexts = [];
             if (searchKw) filterTexts.push(`ค้นหา: "${searchKw}"`);
             if (dept) filterTexts.push(`หน่วยงาน: ${dept}`);
             if (status) filterTexts.push(`สถานะ: ${status}`);
-            const filterDisplay = filterTexts.length > 0 ? `<b>เงื่อนไข:</b> ${filterTexts.join(' | ')}` : `<b>เงื่อนไข:</b> ข้อมูลยานพาหนะทั้งหมด`;
+            
+            // เพิ่มการแสดงข้อความตัวกรองเดือนที่หัวกระดาษรายงานพิมพ์
+            if (monthFilterVal) {
+                if (monthFilterVal === 'next') {
+                    const today = new Date();
+                    const nextMonthTarget = (today.getMonth() + 1) % 12 + 1;
+                    filterTexts.push(`กำหนดต่อทะเบียน: เดือนหน้า (${monthNames[nextMonthTarget]})`);
+                } else {
+                    filterTexts.push(`กำหนดต่อทะเบียนประจำเดือน: ${monthNames[parseInt(monthFilterVal)]}`);
+                }
+            }
+            
+            const filterDisplay = filterTexts.length > 0 ? `<b>เงื่อนไขเอกสาร:</b> ${filterTexts.join(' | ')}` : `<b>เงื่อนไขเอกสาร:</b> ข้อมูลยานพาหนะทั้งหมด`;
 
             let html = `
                 <div style="text-align: center; margin-bottom: 20px;">
