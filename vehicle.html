@@ -8,22 +8,110 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚗</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { font-family: 'Sarabun', sans-serif; background-color: #f8fafc; font-size: 1.125rem; }
         .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); padding: 1.5rem; }
         
         /* ตั้งค่าสำหรับระบบ Print ขาว-ดำ A4 แนวตั้ง */
         @media print {
-            @page { size: A4 portrait; margin: 1cm; }
-            body { background-color: white !important; color: black !important; }
-            #main-ui, nav, #vehicleModal { display: none !important; }
-            #printArea { display: block !important; }
-            * { filter: grayscale(100%) !important; }
+            @page { 
+                size: A4 portrait; 
+                margin: 6mm; 
+            }
+            html, body { 
+                background-color: white !important; 
+                color: black !important; 
+                margin: 0 !important; 
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+            }
+            #main-ui, nav, #vehicleModal, #qrModal { display: none !important; }
+            #printArea { display: block !important; width: 100% !important; }
             
+            /* รายงานตารางแบบปกติ */
             table.print-table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 15px; }
             table.print-table th, table.print-table td { border: 1px solid #333 !important; padding: 6px 8px !important; text-align: left; }
-            table.print-table th { background-color: #f0f0f0 !important; font-weight: bold; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            table.print-table th { background-color: #f0f0f0 !important; font-weight: bold; }
             table.print-table td.text-center { text-align: center; }
+
+            /* Layout QR Code 4 คอลัมน์ x 4 แถว (16 ป้าย / หน้า A4) */
+            .qr-page {
+                display: grid !important;
+                grid-template-columns: repeat(4, 1fr) !important;
+                grid-template-rows: repeat(4, 1fr) !important;
+                gap: 4mm !important;
+                width: 198mm !important;
+                height: 282mm !important;
+                box-sizing: border-box !important;
+                page-break-inside: avoid !important;
+                page-break-after: avoid !important;
+            }
+
+            .qr-card {
+                border: 1.5px dashed #333 !important;
+                border-radius: 8px !important;
+                padding: 3mm 2mm !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                background: #ffffff !important;
+                height: 100% !important;
+            }
+
+            .qr-img-box {
+                width: 38mm !important;
+                height: 38mm !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                margin-bottom: 2mm !important;
+            }
+
+            .qr-img-box img {
+                width: 38mm !important;
+                height: 38mm !important;
+                object-fit: contain !important;
+            }
+
+            .qr-details {
+                width: 100% !important;
+                line-height: 1.25 !important;
+                font-family: 'Sarabun', sans-serif !important;
+            }
+
+            .qr-asset-id {
+                font-size: 8pt !important;
+                font-weight: 600 !important;
+                color: #222 !important;
+                font-family: monospace, 'Sarabun', sans-serif !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
+
+            .qr-license {
+                font-size: 10pt !important;
+                font-weight: 800 !important;
+                color: #000 !important;
+                margin: 1.5px 0 !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
+
+            .qr-dept {
+                font-size: 8pt !important;
+                color: #444 !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
         }
     </style>
 </head>
@@ -104,9 +192,16 @@
                             ❌ ล้างตัวกรอง
                         </button>
                     </div>
-                    <button onclick="printReport()" class="w-full xl:w-auto mt-4 xl:mt-0 bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 px-6 rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
-                        🖨️ พิมพ์รายงาน
-                    </button>
+
+                    <!-- ปุ่มสั่งพิมพ์ -->
+                    <div class="flex flex-wrap gap-2 w-full xl:w-auto mt-4 xl:mt-0">
+                        <button onclick="openQrModal()" class="flex-1 xl:flex-none bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2.5 px-5 rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
+                            📱 พิมพ์ QR Code (16 ป้าย)
+                        </button>
+                        <button onclick="printReport()" class="flex-1 xl:flex-none bg-slate-700 hover:bg-slate-800 text-white font-semibold py-2.5 px-5 rounded-lg shadow-sm flex items-center justify-center gap-2 transition">
+                            🖨️ พิมพ์รายงาน
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="overflow-x-auto">
@@ -138,6 +233,7 @@
         </main>
     </div>
 
+    <!-- Modal รายละเอียดรถ -->
     <div id="vehicleModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-auto overflow-hidden">
             <div class="bg-blue-800 text-white p-5 flex justify-between items-center">
@@ -147,6 +243,52 @@
             <div class="p-6 md:p-8" id="modalBody"></div>
             <div class="bg-gray-50 px-6 py-4 border-t flex justify-end">
                 <button onclick="document.getElementById('vehicleModal').classList.add('hidden')" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold transition">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal เลือกพิมพ์ QR Code (16 ป้าย / หน้า) -->
+    <div id="qrModal" class="fixed inset-0 bg-gray-900 bg-opacity-60 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full mx-auto overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-blue-800 text-white p-5 flex justify-between items-center">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    📱 พิมพ์ QR Code ติดยานพาหนะ (16 ป้าย / หน้า A4)
+                </h3>
+                <button onclick="closeQrModal()" class="text-white hover:text-red-300 text-3xl leading-none">&times;</button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1 space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">เลือกชุดรายการ (ครั้งละ 16 รายการ):</label>
+                    <div id="qrBatchButtons" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-200 gap-2">
+                    <span class="font-semibold text-blue-900 text-sm">
+                        เลือกอยู่: <span id="qrSelectedCount" class="text-blue-700 text-lg font-bold">0</span> / 16 รายการ
+                    </span>
+                    <div class="flex gap-2">
+                        <button onclick="selectFirst16()" class="text-xs bg-white border border-blue-300 text-blue-800 hover:bg-blue-100 px-3 py-1.5 rounded-md font-semibold transition shadow-sm">
+                            เลือก 16 รายการแรก
+                        </button>
+                        <button onclick="deselectAllQr()" class="text-xs bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded-md font-semibold transition shadow-sm">
+                            ล้างการเลือก
+                        </button>
+                    </div>
+                </div>
+
+                <div id="qrVehicleList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-[45vh] overflow-y-auto p-2 border rounded-lg bg-gray-50">
+                    <!-- รายการรถที่มี Checkbox สั่งพิมพ์ -->
+                </div>
+            </div>
+
+            <div class="bg-gray-50 px-6 py-4 border-t flex justify-end gap-3">
+                <button onclick="closeQrModal()" class="px-5 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-semibold transition">
+                    ยกเลิก
+                </button>
+                <button onclick="executeQrPrint()" class="px-6 py-2 bg-blue-800 text-white rounded-lg hover:bg-blue-900 font-bold shadow-md transition flex items-center gap-2">
+                    🖨️ พิมพ์ QR Code (A4)
+                </button>
             </div>
         </div>
     </div>
@@ -167,6 +309,12 @@
         let allVehicles = [], filteredVehicles = [];
         let currentPage = 1; const itemsPerPage = 30;
         let isFiltersPopulated = false;
+        let selectedQrIds = [];
+        let hasAutoOpenedModal = false;
+
+        // ดึง parameter ID จาก URL หากมาจากการสแกน QR Code
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetIdFromUrl = urlParams.get('id');
 
         onValue(ref(db, 'vehicles'), (snapshot) => {
             const data = snapshot.val();
@@ -178,6 +326,15 @@
             
             if(!isFiltersPopulated && allVehicles.length > 0) { populateFilters(); isFiltersPopulated = true; }
             applyFilters();
+
+            // ถ้ามี URL Parameter จากการสแกน QR Code ให้เปิด modal รายละเอียดรถทันที
+            if (targetIdFromUrl && !hasAutoOpenedModal && allVehicles.length > 0) {
+                const found = allVehicles.find(v => v.id === targetIdFromUrl);
+                if (found) {
+                    showModal(targetIdFromUrl);
+                    hasAutoOpenedModal = true;
+                }
+            }
         });
 
         function populateFilters() {
@@ -193,28 +350,27 @@
             const kw = document.getElementById('searchInput').value.toLowerCase();
             const dept = document.getElementById('deptFilter').value;
             const status = document.getElementById('statusFilter').value;
-            const monthOpt = document.getElementById('monthFilter').value; // ค่าตัวกรองเดือน
+            const monthOpt = document.getElementById('monthFilter').value;
             
             filteredVehicles = allVehicles.filter(v => {
                 const matchKw = `${v.assetId} ${v.licensePlate} ${v.assetName}`.toLowerCase().includes(kw);
                 const matchDept = dept === '' || v.department === dept;
                 const matchStatus = status === '' || v.status === status;
                 
-                // ⚡ ระบบคำนวณและกรองเงื่อนไขตามเดือน
                 let matchMonth = true;
                 if (monthOpt !== '') {
                     if (v.taxExpiry && v.taxExpiry.includes('-')) {
-                        const expMonth = parseInt(v.taxExpiry.split('-')[1]); // ดึงเลขเดือนจาก YYYY-MM-DD
+                        const expMonth = parseInt(v.taxExpiry.split('-')[1]);
                         
                         if (monthOpt === 'next') {
                             const today = new Date();
-                            const nextMonthTarget = (today.getMonth() + 1) % 12 + 1; // หาเลขเดือนถัดไป (1-12)
+                            const nextMonthTarget = (today.getMonth() + 1) % 12 + 1;
                             matchMonth = (expMonth === nextMonthTarget);
                         } else {
                             matchMonth = (expMonth === parseInt(monthOpt));
                         }
                     } else {
-                        matchMonth = false; // ไม่มีระบุวันต่อภาษี ให้ปัดตกเมื่อเลือกกรองเดือน
+                        matchMonth = false;
                     }
                 }
                 
@@ -229,7 +385,7 @@
             document.getElementById('searchInput').value = '';
             document.getElementById('deptFilter').value = '';
             document.getElementById('statusFilter').value = '';
-            document.getElementById('monthFilter').value = ''; // ล้างตัวกรองเดือน
+            document.getElementById('monthFilter').value = '';
             applyFilters();
         };
 
@@ -244,7 +400,7 @@
         document.getElementById('searchInput').addEventListener('input', applyFilters);
         document.getElementById('deptFilter').addEventListener('change', applyFilters);
         document.getElementById('statusFilter').addEventListener('change', applyFilters);
-        document.getElementById('monthFilter').addEventListener('change', applyFilters); // ตรวจจับการเปลี่ยนเดือน
+        document.getElementById('monthFilter').addEventListener('change', applyFilters);
 
         function updateSummaryCards(dataList) {
             let activeCount = 0, pendingCount = 0;
@@ -330,6 +486,7 @@
 
         window.showModal = (id) => {
             const v = allVehicles.find(x => x.id === id);
+            if (!v) return;
             document.getElementById('modalBody').innerHTML = `
                 <div class="flex flex-col md:flex-row gap-6">
                     <div class="w-full md:w-1/3 flex justify-center items-start">${v.imageUrl ? `<img src="${v.imageUrl}" class="w-full max-w-[250px] object-cover rounded-xl shadow-md border-4 border-gray-100">` : `<div class="w-full h-48 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">ไม่มีรูปภาพ</div>`}</div>
@@ -350,9 +507,186 @@
             document.getElementById('vehicleModal').classList.remove('hidden');
         };
 
-        // 🖨️ ระบบพิมพ์รายงาน (แสดงชื่อเงื่อนไขเดือนที่เลือกในหัวข้อกระดาษอัตโนมัติ)
+        /* ============================================================ */
+        /* 📱 ระบบพิมพ์ QR CODE ติดยานพาหนะ (16 ป้าย / หน้า A4)           */
+        /* ============================================================ */
+
+        window.openQrModal = () => {
+            if (filteredVehicles.length === 0) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('ไม่มีข้อมูล', 'โปรดเลือกหรือค้นหาข้อมูลเพื่อพิมพ์ QR Code', 'warning');
+                } else {
+                    alert('โปรดเลือกหรือค้นหาข้อมูลเพื่อพิมพ์ QR Code');
+                }
+                return;
+            }
+            
+            // เลือก 16 รายการแรกโดยอัตโนมัติ
+            selectedQrIds = filteredVehicles.slice(0, 16).map(v => v.id);
+            renderQrBatchButtons();
+            renderQrVehicleList();
+            document.getElementById('qrModal').classList.remove('hidden');
+        };
+
+        window.closeQrModal = () => {
+            document.getElementById('qrModal').classList.add('hidden');
+        };
+
+        function renderQrBatchButtons() {
+            const batchContainer = document.getElementById('qrBatchButtons');
+            batchContainer.innerHTML = '';
+            const total = filteredVehicles.length;
+            const batchSize = 16;
+            const totalBatches = Math.ceil(total / batchSize);
+
+            for (let i = 0; i < totalBatches; i++) {
+                const start = i * batchSize + 1;
+                const end = Math.min((i + 1) * batchSize, total);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = "text-xs bg-white hover:bg-blue-100 text-blue-900 border border-blue-200 px-3 py-1.5 rounded-md font-semibold transition shadow-sm";
+                btn.innerText = `ชุดที่ ${i + 1} (${start}-${end})`;
+                btn.onclick = () => selectBatch(i);
+                batchContainer.appendChild(btn);
+            }
+        }
+
+        function selectBatch(batchIndex) {
+            const start = batchIndex * 16;
+            const batchItems = filteredVehicles.slice(start, start + 16);
+            selectedQrIds = batchItems.map(v => v.id);
+            renderQrVehicleList();
+        }
+
+        window.selectFirst16 = () => {
+            selectedQrIds = filteredVehicles.slice(0, 16).map(v => v.id);
+            renderQrVehicleList();
+        };
+
+        window.deselectAllQr = () => {
+            selectedQrIds = [];
+            renderQrVehicleList();
+        };
+
+        function renderQrVehicleList() {
+            const listContainer = document.getElementById('qrVehicleList');
+            listContainer.innerHTML = '';
+            
+            filteredVehicles.forEach(v => {
+                const isChecked = selectedQrIds.includes(v.id);
+                const card = document.createElement('label');
+                card.className = `flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition select-none ${isChecked ? 'bg-blue-100 border-blue-400' : 'bg-white border-gray-200 hover:bg-gray-100'}`;
+                
+                card.innerHTML = `
+                    <input type="checkbox" class="mt-0.5 w-4 h-4 text-blue-600 rounded focus:ring-blue-500" ${isChecked ? 'checked' : ''} onchange="toggleQrSelect('${v.id}', this.checked)">
+                    <div class="text-xs overflow-hidden leading-snug">
+                        <div class="font-bold text-blue-900 truncate">${v.licensePlate || '-'}</div>
+                        <div class="text-gray-600 font-mono truncate">${v.assetId || '-'}</div>
+                        <div class="text-gray-500 truncate mt-0.5">${v.department || '-'}</div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+            
+            document.getElementById('qrSelectedCount').innerText = selectedQrIds.length;
+        }
+
+        window.toggleQrSelect = (id, checked) => {
+            if (checked) {
+                if (selectedQrIds.length >= 16) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire('ข้อจำกัดการพิมพ์', 'สามารถเลือกพิมพ์ได้สูงสุดครั้งละ 16 ป้ายต่อหน้า A4 เท่านั้น', 'info');
+                    } else {
+                        alert('สามารถเลือกพิมพ์ได้สูงสุดครั้งละ 16 ป้ายต่อหน้า A4 เท่านั้น');
+                    }
+                    renderQrVehicleList();
+                    return;
+                }
+                if (!selectedQrIds.includes(id)) selectedQrIds.push(id);
+            } else {
+                selectedQrIds = selectedQrIds.filter(x => x !== id);
+            }
+            renderQrVehicleList();
+        };
+
+        window.executeQrPrint = () => {
+            if (selectedQrIds.length === 0) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire('ยังไม่ได้เลือกรายการ', 'กรุณาเลือกยานพาหนะอย่างน้อย 1 รายการเพื่อพิมพ์', 'warning');
+                } else {
+                    alert('กรุณาเลือกยานพาหนะอย่างน้อย 1 รายการเพื่อพิมพ์');
+                }
+                return;
+            }
+            
+            const targetVehicles = filteredVehicles.filter(v => selectedQrIds.includes(v.id));
+            const pageBaseUrl = window.location.origin + window.location.pathname;
+            const printArea = document.getElementById('printArea');
+            
+            let cardsHtml = '';
+            targetVehicles.forEach((v) => {
+                const scanUrl = `${pageBaseUrl}?id=${encodeURIComponent(v.id)}`;
+                const qrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(scanUrl)}`;
+                
+                cardsHtml += `
+                    <div class="qr-card">
+                        <div class="qr-img-box">
+                            <img src="${qrImgUrl}" alt="QR Code" />
+                        </div>
+                        <div class="qr-details">
+                            <div class="qr-asset-id">รหัส: ${v.assetId || '-'}</div>
+                            <div class="qr-license">${v.licensePlate || '-'}</div>
+                            <div class="qr-dept">${v.department || '-'}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            printArea.innerHTML = `<div class="qr-page">${cardsHtml}</div>`;
+            closeQrModal();
+
+            // รอรูปภาพ QR Code โหลดเสร็จก่อนสั่งพิมพ์
+            const qrImgs = printArea.querySelectorAll('img');
+            let loadedCount = 0;
+            let isPrinted = false;
+
+            const triggerPrint = () => {
+                if (!isPrinted) {
+                    isPrinted = true;
+                    window.print();
+                }
+            };
+
+            if (qrImgs.length === 0) {
+                triggerPrint();
+            } else {
+                qrImgs.forEach(img => {
+                    if (img.complete) {
+                        loadedCount++;
+                        if (loadedCount >= qrImgs.length) triggerPrint();
+                    } else {
+                        img.onload = img.onerror = () => {
+                            loadedCount++;
+                            if (loadedCount >= qrImgs.length) triggerPrint();
+                        };
+                    }
+                });
+
+                // Safety Timeout (1.2 วินาที) ในกรณีที่โหลดรูปช้า
+                setTimeout(triggerPrint, 1200);
+            }
+        };
+
+        /* ============================================================ */
+        /* 🖨️ ระบบพิมพ์รายงานทะเบียนยานพาหนะ                            */
+        /* ============================================================ */
+
         window.printReport = () => {
-            if (filteredVehicles.length === 0) { Swal.fire('ไม่มีข้อมูล', 'โปรดเลือกข้อมูลเพื่อพิมพ์รายงาน', 'warning'); return; }
+            if (filteredVehicles.length === 0) { 
+                if (typeof Swal !== 'undefined') Swal.fire('ไม่มีข้อมูล', 'โปรดเลือกข้อมูลเพื่อพิมพ์รายงาน', 'warning');
+                else alert('โปรดเลือกข้อมูลเพื่อพิมพ์รายงาน');
+                return; 
+            }
             const printArea = document.getElementById('printArea');
             const searchKw = document.getElementById('searchInput').value.trim();
             const dept = document.getElementById('deptFilter').value;
@@ -366,7 +700,6 @@
             if (dept) filterTexts.push(`หน่วยงาน: ${dept}`);
             if (status) filterTexts.push(`สถานะ: ${status}`);
             
-            // เพิ่มการแสดงข้อความตัวกรองเดือนที่หัวกระดาษรายงานพิมพ์
             if (monthFilterVal) {
                 if (monthFilterVal === 'next') {
                     const today = new Date();
